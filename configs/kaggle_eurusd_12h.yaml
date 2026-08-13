@@ -24,6 +24,8 @@ data:
   quantiles: [0.1, 0.5, 0.9]
   cost_threshold: 0.0001
   vol_window: 24
+  # Clip heavy-tailed vol-normalized y (Kaggle v1 had |y| up to ~50 dominating pinball)
+  target_clip: 5.0
   feature_cols: ["open", "high", "low", "close", "volume"]
   context_cols:
     - fed_funds_rate

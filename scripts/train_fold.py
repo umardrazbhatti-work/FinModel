@@ -46,6 +46,7 @@ def build_dataset(cfg, fold_start, fold_end, mode: str) -> MultiTFDataset:
         fold_start=fold_start,
         fold_end=fold_end,
         vol_window=data.get("vol_window", 24),
+        target_clip=data.get("target_clip", 5.0),
     )
 
 

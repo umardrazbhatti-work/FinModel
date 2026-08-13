@@ -57,6 +57,7 @@ def main() -> None:
         fold_start=args.start,
         fold_end=args.end,
         vol_window=data.get("vol_window", 24),
+        target_clip=data.get("target_clip", 5.0),
     )
     # Fit standardization on the same range (evaluation-only convenience)
     ds.fit_standardization()

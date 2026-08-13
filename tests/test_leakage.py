@@ -73,6 +73,25 @@ def test_volatility_past_only(dataset: MultiTFDataset):
         assert np.isfinite(vol) and vol > 0
 
 
+def test_target_clip_bounds(dataset: MultiTFDataset):
+    """Vol-normalized targets must respect target_clip when enabled."""
+    clip = dataset.target_clip
+    if clip is None:
+        pytest.skip("target_clip disabled")
+    n = min(200, len(dataset))
+    max_abs = 0.0
+    for i in range(n):
+        sample = dataset[i]
+        for tf in dataset.tradable_tfs:
+            y = sample["targets"][tf].numpy()
+            m = sample["target_mask"][tf].numpy()
+            if m.any():
+                max_abs = max(max_abs, float(np.max(np.abs(y[m > 0.5]))))
+            assert np.all(np.abs(y) <= clip + 1e-5)
+    # Sanity: with real data we should see some non-trivial targets
+    assert max_abs > 0.0
+
+
 def test_shapes_and_finite(dataset: MultiTFDataset):
     sample = dataset[min(5, len(dataset) - 1)]
     for tf, x in sample["inputs"].items():

@@ -21,6 +21,8 @@ data:
   quantiles: [0.1, 0.5, 0.9]
   cost_threshold: 0.0001
   vol_window: 24
+  # Winsorize vol-normalized targets to ±target_clip (null / 0 = off)
+  target_clip: 5.0
   feature_cols: ["open", "high", "low", "close", "volume"]
   context_cols:
     - fed_funds_rate

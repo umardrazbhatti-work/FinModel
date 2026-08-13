@@ -102,6 +102,7 @@ class MultiTFDataset(Dataset):
     - All TF series are strictly truncated to bars with timestamp <= t
     - Targets are future log-returns on 30m / 1h / 4h only
     - Targets are normalized by past-only realized volatility
+    - Optional winsorization of vol-normalized targets (target_clip)
     - Small moves below cost_threshold are masked
     """
 
@@ -121,6 +122,7 @@ class MultiTFDataset(Dataset):
         fold_start: Optional[pd.Timestamp] = None,
         fold_end: Optional[pd.Timestamp] = None,
         vol_window: int = 24,
+        target_clip: Optional[float] = 5.0,
         eps: float = 1e-8,
         feature_mean: Optional[Dict[str, np.ndarray]] = None,
         feature_std: Optional[Dict[str, np.ndarray]] = None,
@@ -148,6 +150,11 @@ class MultiTFDataset(Dataset):
         self.context_cols = list(context_cols or DEFAULT_CONTEXT_COLS)
         self.mode = mode
         self.vol_window = int(vol_window)
+        # None / <=0 disables winsorization of vol-normalized targets
+        if target_clip is None or float(target_clip) <= 0:
+            self.target_clip: Optional[float] = None
+        else:
+            self.target_clip = float(target_clip)
         self.eps = float(eps)
         self.standardize = standardize
         self.tradable_tfs = [tf for tf in TRADABLE_TFS if tf in self.tfs or tf in self.horizons]
@@ -484,7 +491,10 @@ class MultiTFDataset(Dataset):
                     tf_targets.append(0.0)
                     tf_masks.append(0.0)
                 else:
-                    tf_targets.append(raw_ret / (vol + self.eps))
+                    y = raw_ret / (vol + self.eps)
+                    if self.target_clip is not None:
+                        y = float(np.clip(y, -self.target_clip, self.target_clip))
+                    tf_targets.append(y)
                     tf_masks.append(1.0)
 
             targets[tf] = np.asarray(tf_targets, dtype=np.float32)
