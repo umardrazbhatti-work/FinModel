@@ -1,0 +1,131 @@
+"""Statistical evaluation metrics."""
+
+from __future__ import annotations
+
+from typing import Dict, List, Optional
+
+import numpy as np
+
+
+def _pinball_np(
+    pred: np.ndarray,
+    target: np.ndarray,
+    mask: np.ndarray,
+    quantiles: List[float],
+) -> float:
+    """pred [N,H,Q], target [N,H], mask [N,H]."""
+    q = np.asarray(quantiles, dtype=np.float64).reshape(1, 1, -1)
+    t = target[..., None]
+    errors = t - pred
+    loss = np.maximum(q * errors, (q - 1.0) * errors)
+    m = mask[..., None]
+    valid = m.sum()
+    if valid == 0:
+        return float("nan")
+    return float((loss * m).sum() / (valid * pred.shape[-1]))
+
+
+def compute_statistical_metrics(
+    predictions: Dict[str, np.ndarray],
+    targets: Dict[str, np.ndarray],
+    masks: Dict[str, np.ndarray],
+    quantiles: List[float],
+) -> dict:
+    """
+    Compute pinball, coverage, directional accuracy per TF and overall.
+    """
+    q_levels = list(quantiles)
+    try:
+        median_idx = q_levels.index(0.5)
+    except ValueError:
+        median_idx = len(q_levels) // 2
+
+    per_tf = {}
+    pinballs = []
+    coverages = {str(q): [] for q in q_levels}
+    dir_accs = []
+
+    for tf, pred in predictions.items():
+        tgt = targets[tf]
+        m = masks[tf]
+        pb = _pinball_np(pred, tgt, m, q_levels)
+        pinballs.append(pb)
+
+        tf_cov = {}
+        for qi, q in enumerate(q_levels):
+            # coverage: fraction of y <= q_hat
+            valid = m > 0.5
+            if valid.sum() == 0:
+                cov = float("nan")
+            else:
+                cov = float((tgt[valid] <= pred[..., qi][valid]).mean())
+            tf_cov[str(q)] = cov
+            coverages[str(q)].append(cov)
+
+        # directional accuracy on median
+        med = pred[..., median_idx]
+        valid = m > 0.5
+        if valid.sum() == 0:
+            da = float("nan")
+        else:
+            da = float((np.sign(med[valid]) == np.sign(tgt[valid])).mean())
+        dir_accs.append(da)
+
+        # simple CRPS approx: mean absolute pinball across quantiles (scaled)
+        crps = pb  # pinball average is a CRPS proxy for discrete quantiles
+
+        per_tf[tf] = {
+            "pinball": pb,
+            "coverage": tf_cov,
+            "directional_accuracy": da,
+            "crps_proxy": crps,
+        }
+
+    overall = {
+        "pinball": float(np.nanmean(pinballs)) if pinballs else float("nan"),
+        "directional_accuracy": float(np.nanmean(dir_accs)) if dir_accs else float("nan"),
+        "coverage": {
+            q: float(np.nanmean(vals)) if vals else float("nan")
+            for q, vals in coverages.items()
+        },
+    }
+    return {"overall": overall, "per_tf": per_tf}
+
+
+def baseline_predict_zero(
+    targets: Dict[str, np.ndarray],
+    quantiles: List[float],
+) -> Dict[str, np.ndarray]:
+    """Always predict 0 for all quantiles."""
+    out = {}
+    n_q = len(quantiles)
+    for tf, tgt in targets.items():
+        n, h = tgt.shape
+        out[tf] = np.zeros((n, h, n_q), dtype=np.float32)
+    return out
+
+
+def baseline_historical_mean(
+    train_targets: Dict[str, np.ndarray],
+    train_masks: Dict[str, np.ndarray],
+    test_targets: Dict[str, np.ndarray],
+    quantiles: List[float],
+) -> Dict[str, np.ndarray]:
+    """Predict historical mean (for all quantiles) from train fold targets."""
+    out = {}
+    n_q = len(quantiles)
+    for tf, tgt_test in test_targets.items():
+        tr = train_targets[tf]
+        m = train_masks[tf]
+        means = []
+        for h in range(tr.shape[1]):
+            valid = m[:, h] > 0.5
+            if valid.sum() == 0:
+                means.append(0.0)
+            else:
+                means.append(float(tr[valid, h].mean()))
+        means_arr = np.asarray(means, dtype=np.float32)  # [H]
+        n = tgt_test.shape[0]
+        pred = np.tile(means_arr.reshape(1, -1, 1), (n, 1, n_q))
+        out[tf] = pred
+    return out

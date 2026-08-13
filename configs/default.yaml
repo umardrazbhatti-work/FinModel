@@ -1,0 +1,89 @@
+project:
+  name: mtp-transformer
+  seed: 42
+
+data:
+  data_dir: data/aligned
+  pair: EURUSD
+  tfs: ["5m", "15m", "30m", "1h", "4h", "1d"]
+  primary_tf: "1h"
+  lookback:
+    5m: 96
+    15m: 64
+    30m: 48
+    1h: 72
+    4h: 42
+    1d: 60
+  horizons:
+    30m: [1, 4, 12]
+    1h: [1, 4, 12]
+    4h: [1, 4, 12]
+  quantiles: [0.1, 0.5, 0.9]
+  cost_threshold: 0.0001
+  vol_window: 24
+  feature_cols: ["open", "high", "low", "close", "volume"]
+  context_cols:
+    - fed_funds_rate
+    - us_2y_yield
+    - us_10y_yield
+    - yield_curve_10y2y
+    - us_10y_real_yield
+    - us_cpi
+    - us_core_cpi
+    - us_core_pce
+    - us_nfp
+    - us_unemployment
+    - us_industrial_production
+    - usd_broad_index
+    - vix
+    - high_impact_count
+    - medium_impact_count
+    - usd_events
+    - eur_events
+    - gbp_events
+    - jpy_events
+
+model:
+  d_model: 64
+  n_layers: 3
+  n_heads: 4
+  dim_feedforward: 128
+  dropout: 0.1
+  patch_len: 16
+  gate_temperature: 1.0
+  gate_entropy_weight: 0.01
+  use_revin: true
+  use_context: true
+
+training:
+  batch_size: 64
+  max_epochs: 60
+  lr: 0.0003
+  weight_decay: 0.0001
+  grad_clip: 1.0
+  early_stopping_patience: 12
+  num_workers: 0
+  log_every: 100
+  baseline_max_epochs: 40
+  baseline_early_stopping_patience: 10
+
+walk_forward:
+  min_train_bars: 5000
+  val_bars: 1000
+  test_bars: 1000
+  step_bars: 1500
+  purge_bars: 24
+  mode: expanding
+  max_folds: 6
+
+evaluation:
+  cost_per_trade: 0.0001
+  signal_threshold: 0.1
+  primary_eval_tf: "1h"
+  primary_eval_horizon_idx: 0
+  prediction_sample_rows: 500
+
+output:
+  dir: outputs
+  experiment_name: exp_eurusd_v1
+  include_checkpoints_in_pack: false
