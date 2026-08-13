@@ -34,8 +34,11 @@ python scripts/run_walk_forward.py --config configs/eurusd_1h.yaml
 
 1. Upload `kaggle_upload/mtp_aligned_parquet.zip` as a Kaggle dataset (`aligned/*.parquet`).
 2. Upload the local notebook `notebooks/kaggle_mtp_walk_forward.ipynb` to Kaggle (not in this git repo).
-3. Set `GITHUB_REPO_URL` and dataset folder name in the notebook.
+3. Set `GITHUB_REPO_URL` (`https://github.com/umardrazbhatti-work/FinModel.git`) in the notebook.
+   Dataset paths may appear as `/kaggle/input/datasets/<user>/mtp-aligned-parquet/aligned/` — the notebook searches recursively.
 4. Enable **Internet + GPU**, then Run All.
+   - Prefer **GPU T4** (works with stock Kaggle PyTorch).
+   - **Tesla P100** is sm_60; recent Kaggle torch (cu128) has no kernels for it. The notebook reinstalls `torch==2.1.2+cu118` automatically when needed.
 5. Download `/kaggle/working/exp_eurusd_kaggle_12h_analysis_pack.zip` (20–30+ analysis files) for offline review.
 
 Runtime config: `configs/kaggle_eurusd_12h.yaml`

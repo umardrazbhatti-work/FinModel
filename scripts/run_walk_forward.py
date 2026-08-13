@@ -41,6 +41,36 @@ from src.utils.seed import set_seed
 logger = get_logger("mtp.walk_forward")
 
 
+def resolve_device(requested: str | None) -> str:
+    """Pick a working device; fail fast if CUDA is advertised but unusable (e.g. P100 + new torch)."""
+    if requested:
+        device = requested
+    else:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+    if device != "cuda":
+        return device
+    if not torch.cuda.is_available():
+        logger.warning("CUDA requested but not available; falling back to CPU")
+        return "cpu"
+    try:
+        name = torch.cuda.get_device_name(0)
+        major, minor = torch.cuda.get_device_capability(0)
+        logger.info("GPU: %s (compute %d.%d)", name, major, minor)
+        x = torch.ones(1, device="cuda")
+        _ = (x * 2).item()
+        torch.cuda.synchronize()
+    except Exception as exc:  # noqa: BLE001 — surface as clear operator error
+        raise RuntimeError(
+            "CUDA is visible but no kernel can run on this GPU "
+            f"({torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'unknown'}). "
+            "Common on Kaggle Tesla P100 with recent PyTorch (needs sm_70+). "
+            "Fix: switch Kaggle accelerator to GPU T4, or install torch==2.1.2+cu118 "
+            "before training. Original error: "
+            f"{type(exc).__name__}: {exc}"
+        ) from exc
+    return "cuda"
+
+
 def build_dataset(cfg, fold_start, fold_end, mode: str) -> MultiTFDataset:
     data = cfg["data"]
     data_dir = data["data_dir"]
@@ -156,7 +186,7 @@ def main() -> None:
         cfg_path = ROOT / cfg_path
     cfg = load_config(cfg_path)
     set_seed(int(cfg["project"]["seed"]))
-    device = args.device or ("cuda" if torch.cuda.is_available() else "cpu")
+    device = resolve_device(args.device)
     logger.info("Device: %s", device)
     t0 = time.time()
 
