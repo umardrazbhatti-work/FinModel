@@ -16,6 +16,9 @@ design/
 notebooks/
 *.ipynb
 docs/
+# Private roadmap — never publish
+Plan.md
+plan.md
 
 # --- Python ---
 __pycache__/
