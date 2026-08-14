@@ -60,8 +60,10 @@ model:
 training:
   batch_size: 64
   max_epochs: 60
-  lr: 0.0003
-  weight_decay: 0.0001
+  lr: 0.0001
+  weight_decay: 0.0005
+  lr_scheduler: cosine
+  cosine_eta_min: 0.000001
   grad_clip: 1.0
   early_stopping_patience: 12
   num_workers: 0

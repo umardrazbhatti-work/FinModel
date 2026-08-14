@@ -12,6 +12,42 @@ Format per entry:
 
 ---
 
+## 2026-08-14 — Milder optimization (LR / weight decay / cosine)
+
+### What changed
+1. **Training defaults (controlled upgrade B):**
+   - `lr`: `0.0003` → **`0.0001`**
+   - `weight_decay`: `0.0001` → **`0.0005`**
+   - `lr_scheduler`: **`cosine`** (`CosineAnnealingLR`, `eta_min=1e-6`) — was hard-coded `ReduceLROnPlateau`
+2. New factory `src/training/optim.py` → `build_optimizer_and_scheduler()`:
+   - Supports `cosine` | `plateau` | `none` via config
+   - Used by `scripts/run_walk_forward.py` and `scripts/train_fold.py` (MTP + single-TF share same path)
+3. Configs updated: `default.yaml`, `eurusd_1h.yaml`, `kaggle_eurusd_12h.yaml`
+4. Unit tests: `tests/test_optim.py`
+
+### Why
+- After `target_clip=5.0` re-run, val pinball still peaked at epoch 1–2 (fast overfit).
+- Milder step size + stronger L2 + smooth LR decay aims to delay overfit without growing model capacity.
+- Same optim settings apply to single-TF baseline for a **fair** comparison under the shared protocol.
+
+### How to run (Kaggle)
+- Pull latest `main`, re-run notebook; no notebook edits required if it clones GitHub.
+- Confirm runtime config / pack `14_hyperparameters.json` shows `lr: 0.0001`, `weight_decay: 0.0005`, and training logs do not error on scheduler step.
+
+### Success criteria (same fair bar)
+- Mean MTP test pinball **&lt;** single-TF under same 6 folds
+- Preferably later `best_epoch` (not stuck at 1–2) and smaller train–val gap at end
+- Do **not** judge by absolute pinball vs the clip-only run alone
+
+### Controlled upgrade queue (status)
+1. target_clip=5.0 — done + measured (multi-TF still loses).
+2. **Milder optim (LR 1e-4, wd 5e-4, cosine)** — **implemented; re-run pending**.
+3. Slightly higher dropout — pending.
+4. Offline signal-threshold sweep — pending.
+5. Gate temperature / entropy — only if 2–3 help val curves.
+
+---
+
 ## 2026-08-14 — Kaggle re-run with target_clip=5.0 (14-8-26 1300Hrs)
 
 ### What changed
@@ -56,7 +92,7 @@ Format per entry:
 
 ### Controlled upgrade queue (status after this run)
 1. **target_clip=5.0** — done + re-run measured; multi-TF still loses.
-2. Milder optim (LR 1e-4 / cosine / higher wd) — **next**.
+2. Milder optim (LR 1e-4 / cosine / higher wd) — see **2026-08-14 milder optim** entry (implemented; re-run pending).
 3. Slightly higher dropout — pending.
 4. Offline signal-threshold sweep on fixed q50 — pending (no retrain).
 5. Gate temperature / entropy retune — only if 2–3 improve val curves.

@@ -32,7 +32,7 @@ from src.evaluation.artifacts import (
 from src.evaluation.metrics import baseline_historical_mean, baseline_predict_zero
 from src.losses import MultiQuantilePinballLoss
 from src.models import MTPTransformer
-from src.training import MTPTrainer, generate_walk_forward_folds
+from src.training import MTPTrainer, build_optimizer_and_scheduler, generate_walk_forward_folds
 from src.utils.config import load_config, save_config
 from src.utils.io import ensure_dir, save_json
 from src.utils.logging import get_logger
@@ -127,13 +127,9 @@ def train_model_on_fold(
         tradable_tfs=["30m", "1h", "4h"],
         entropy_weight=float(cfg["model"].get("gate_entropy_weight", 0.01)),
     )
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=float(tr["lr"]),
-        weight_decay=float(tr["weight_decay"]),
-    )
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.5, patience=3
+    epochs = int(max_epochs if max_epochs is not None else tr["max_epochs"])
+    optimizer, scheduler = build_optimizer_and_scheduler(
+        model, tr, max_epochs=epochs
     )
     trainer = MTPTrainer(
         model=model,
@@ -147,7 +143,7 @@ def train_model_on_fold(
     fit = trainer.fit_fold(
         train_loader=train_loader,
         val_loader=val_loader,
-        max_epochs=int(max_epochs if max_epochs is not None else tr["max_epochs"]),
+        max_epochs=epochs,
         early_stopping_patience=int(
             patience if patience is not None else tr["early_stopping_patience"]
         ),
