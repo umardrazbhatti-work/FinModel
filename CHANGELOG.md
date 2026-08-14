@@ -39,6 +39,8 @@ python scripts/run_rv_pilot.py --config configs/pilot_eurusd_rv_single_tf.yaml
 ```
 Outputs under `outputs/exp_eurusd_rv_single_tf_pilot/` (`00_pilot_report.md`, `10_go_nogo_rv_pilot.json`).
 
+**Kaggle:** local notebook `notebooks/kaggle_mtp_walk_forward.ipynb` defaults to `EXPERIMENT_MODE = "rv_pilot"` (not in git). Re-upload notebook to Kaggle after pull of pilot code.
+
 ### Success / fail branching
 - **PASS** → plumbing confirmed; may revisit multi-TF **on RV (or new target)** later  
 - **FAIL** → try Option B (large-move classification) or rethink features/horizon — still no multi-TF/pairs
@@ -77,10 +79,10 @@ Attack a target more likely to contain signal (volatility clustering) before spe
 
 ### Controlled upgrade queue (status)
 1. target_clip=5.0 — done + measured (multi-TF still loses).
-2. **Milder optim (LR 1e-4, wd 5e-4, cosine)** — **implemented; re-run pending**.
-3. Slightly higher dropout — pending.
-4. Offline signal-threshold sweep — pending.
-5. Gate temperature / entropy — only if 2–3 help val curves.
+2. Milder optim (LR 1e-4, wd 5e-4, cosine) — **done + measured** (best_epoch better; multi-TF still fails).
+3. Return-task multi-TF grinding — **stopped** after deep diagnostic.
+4. Single-TF realized-vol pilot — **code ready; full Kaggle run pending**.
+5. Dropout / signal-threshold on returns — deprioritized while target pivot runs.
 
 ---
 
