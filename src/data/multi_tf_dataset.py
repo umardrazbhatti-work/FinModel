@@ -100,10 +100,10 @@ class MultiTFDataset(Dataset):
 
     At every primary timestamp t:
     - All TF series are strictly truncated to bars with timestamp <= t
-    - Targets are future log-returns on 30m / 1h / 4h only
-    - Targets are normalized by past-only realized volatility
-    - Optional winsorization of vol-normalized targets (target_clip)
-    - Small moves below cost_threshold are masked
+    - Targets: either future vol-normalized log-returns (default) or future
+      realized volatility on the primary TF (`target_type=realized_vol`)
+    - Optional winsorization of return targets (target_clip)
+    - Small return moves below cost_threshold are masked (return mode only)
     """
 
     def __init__(
@@ -123,6 +123,9 @@ class MultiTFDataset(Dataset):
         fold_end: Optional[pd.Timestamp] = None,
         vol_window: int = 24,
         target_clip: Optional[float] = 5.0,
+        target_type: str = "return",
+        tradable_tfs: Optional[List[str]] = None,
+        rv_log_transform: bool = True,
         eps: float = 1e-8,
         feature_mean: Optional[Dict[str, np.ndarray]] = None,
         feature_std: Optional[Dict[str, np.ndarray]] = None,
@@ -155,9 +158,31 @@ class MultiTFDataset(Dataset):
             self.target_clip: Optional[float] = None
         else:
             self.target_clip = float(target_clip)
+        self.target_type = str(target_type or "return").lower().strip()
+        if self.target_type not in ("return", "realized_vol", "rv"):
+            raise ValueError(
+                f"target_type must be 'return' or 'realized_vol', got {target_type!r}"
+            )
+        if self.target_type == "rv":
+            self.target_type = "realized_vol"
+        # Log-RV stabilizes tiny natural-scale FX vols (~1e-3)
+        self.rv_log_transform = bool(rv_log_transform)
         self.eps = float(eps)
         self.standardize = standardize
-        self.tradable_tfs = [tf for tf in TRADABLE_TFS if tf in self.tfs or tf in self.horizons]
+        if tradable_tfs is not None:
+            self.tradable_tfs = [_normalize_tf(tf) for tf in tradable_tfs]
+        elif self.target_type == "realized_vol":
+            # Pilot: predict RV on the primary TF only
+            self.tradable_tfs = [self.primary_tf]
+            if self.primary_tf not in self.horizons:
+                self.horizons[self.primary_tf] = [4, 12]
+        else:
+            self.tradable_tfs = [
+                tf for tf in TRADABLE_TFS if tf in self.tfs or tf in self.horizons
+            ]
+        for tf in self.tradable_tfs:
+            if tf not in self.horizons:
+                raise ValueError(f"No horizons configured for tradable TF {tf}")
 
         # Arrays keyed by logical TF name (1d not daily)
         self.timestamps: Dict[str, np.ndarray] = {}
@@ -445,7 +470,74 @@ class MultiTFDataset(Dataset):
             return float(self.eps)
         return vol
 
+    def _future_realized_vol(self, tf: str, end_idx: int, horizon_bars: int) -> float:
+        """
+        Realized vol of log-returns over the *next* `horizon_bars` bars after end_idx.
+
+        RV = sqrt(mean(r_i^2)) for i = 1..H using closes[end_idx .. end_idx+H].
+        Requires end_idx + horizon_bars < len(closes).
+        """
+        closes = self.closes[tf]
+        last = end_idx + horizon_bars
+        if end_idx < 0 or last >= len(closes) or horizon_bars < 1:
+            return float("nan")
+        window = np.clip(closes[end_idx : last + 1].astype(np.float64), self.eps, None)
+        if len(window) < 2:
+            return float("nan")
+        log_rets = np.diff(np.log(window))
+        if len(log_rets) == 0:
+            return float("nan")
+        rv = float(np.sqrt(np.mean(log_rets ** 2)))
+        if not np.isfinite(rv) or rv < self.eps:
+            return float(self.eps)
+        return rv
+
     def _compute_targets(
+        self, t: np.datetime64
+    ) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray], Dict[str, np.ndarray]]:
+        if self.target_type == "realized_vol":
+            return self._compute_targets_realized_vol(t)
+        return self._compute_targets_return(t)
+
+    def _compute_targets_realized_vol(
+        self, t: np.datetime64
+    ) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray], Dict[str, np.ndarray]]:
+        """Targets = future realized vol (positive). raw_returns holds the same RV values."""
+        targets: Dict[str, np.ndarray] = {}
+        masks: Dict[str, np.ndarray] = {}
+        raw_returns: Dict[str, np.ndarray] = {}
+
+        for tf in self.tradable_tfs:
+            end_idx = int(np.searchsorted(self.timestamps[tf], t, side="right") - 1)
+            n_h = len(self.horizons[tf])
+            tf_targets: List[float] = []
+            tf_masks: List[float] = []
+            tf_raw: List[float] = []
+            if end_idx < 0:
+                targets[tf] = np.zeros(n_h, dtype=np.float32)
+                masks[tf] = np.zeros(n_h, dtype=np.float32)
+                raw_returns[tf] = np.zeros(n_h, dtype=np.float32)
+                continue
+            for h in self.horizons[tf]:
+                rv = self._future_realized_vol(tf, end_idx, int(h))
+                if not np.isfinite(rv):
+                    tf_targets.append(0.0)
+                    tf_masks.append(0.0)
+                    tf_raw.append(0.0)
+                else:
+                    # raw_returns stores natural-scale RV; targets may be log(RV)
+                    tf_raw.append(float(rv))
+                    y = float(rv)
+                    if self.rv_log_transform:
+                        y = float(np.log(rv + self.eps))
+                    tf_targets.append(y)
+                    tf_masks.append(1.0)
+            targets[tf] = np.asarray(tf_targets, dtype=np.float32)
+            masks[tf] = np.asarray(tf_masks, dtype=np.float32)
+            raw_returns[tf] = np.asarray(tf_raw, dtype=np.float32)
+        return targets, masks, raw_returns
+
+    def _compute_targets_return(
         self, t: np.datetime64
     ) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray], Dict[str, np.ndarray]]:
         targets: Dict[str, np.ndarray] = {}

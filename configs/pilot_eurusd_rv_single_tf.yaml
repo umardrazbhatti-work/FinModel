@@ -1,0 +1,73 @@
+# Stage-1 pilot: single-TF realized-volatility prediction (EURUSD 1h only)
+# Success: mean OOS corr(q50, y) > 0.15 on primary horizon, stable across folds
+# Do NOT expand multi-TF or pairs until this (or large-move pilot) shows skill.
+
+project:
+  name: mtp-transformer-rv-pilot
+  seed: 42
+
+data:
+  data_dir: data/aligned
+  pair: EURUSD
+  # Single TF inputs only for this pilot
+  tfs: ["1h"]
+  primary_tf: "1h"
+  lookback:
+    1h: 72
+  # Horizon = bars ahead used to form future realized vol
+  horizons:
+    1h: [4, 12]
+  tradable_tfs: ["1h"]
+  target_type: realized_vol
+  # log(RV) for training stability; skill metrics still use model q50 vs log-RV target
+  rv_log_transform: true
+  quantiles: [0.1, 0.5, 0.9]
+  cost_threshold: 0.0001
+  vol_window: 24
+  target_clip: null
+  feature_cols: ["open", "high", "low", "close", "volume"]
+  context_cols: []
+
+model:
+  d_model: 64
+  n_layers: 3
+  n_heads: 4
+  dim_feedforward: 128
+  dropout: 0.1
+  patch_len: 16
+  gate_temperature: 1.0
+  gate_entropy_weight: 0.0
+  use_revin: true
+  use_context: false
+
+training:
+  batch_size: 64
+  max_epochs: 60
+  lr: 0.0001
+  weight_decay: 0.0005
+  lr_scheduler: cosine
+  cosine_eta_min: 0.000001
+  grad_clip: 1.0
+  early_stopping_patience: 12
+  num_workers: 0
+  log_every: 100
+
+walk_forward:
+  min_train_bars: 5000
+  val_bars: 1000
+  test_bars: 1000
+  step_bars: 1500
+  purge_bars: 24
+  mode: expanding
+  max_folds: 6
+
+evaluation:
+  # Pilot success bar (Plan Stage 1 target pivot)
+  success_corr: 0.15
+  primary_eval_tf: "1h"
+  primary_eval_horizon_idx: 1   # prefer 12-bar RV (index 1 in [4,12])
+  prediction_sample_rows: 500
+
+output:
+  dir: outputs
+  experiment_name: exp_eurusd_rv_single_tf_pilot

@@ -12,6 +12,42 @@ Format per entry:
 
 ---
 
+## 2026-08-14 — Target pivot: single-TF realized-vol pilot (post deep diagnostic)
+
+### Decision
+Deep diagnostic + three Kaggle return-quantile runs show:
+- Pipeline, leakage checks, gradients, and capacity are fine (on-batch fit works).
+- Short-horizon **vol-normalized return** quantiles have ~**no OOS skill** (corr≈0, dir≈50%; Ridge probe ≈0).
+- Multi-TF consistently loses to single-TF under that objective.
+
+**Stop** grinding multi-horizon return quantiles / multi-TF expansion on 1h EURUSD.  
+**Next:** change the supervised target; keep architecture fixed.
+
+### What changed (code)
+1. `MultiTFDataset` supports `target_type: return | realized_vol`:
+   - RV = √mean(r²) over the next H bars on the primary TF
+   - Optional `rv_log_transform: true` (default) for stable training scale
+   - `tradable_tfs` override for single-TF pilots
+2. Config: `configs/pilot_eurusd_rv_single_tf.yaml` (EURUSD 1h only, horizons 4 & 12)
+3. Runner: `scripts/run_rv_pilot.py` — **single-TF only**, walk-forward, reports corr(q50,y) + go/nogo
+4. Success bar: mean primary-horizon OOS corr > **0.15** and majority folds pass
+
+### How to run
+```bash
+python scripts/run_rv_pilot.py --config configs/pilot_eurusd_rv_single_tf.yaml
+# optional: --max-folds 6 --device cuda
+```
+Outputs under `outputs/exp_eurusd_rv_single_tf_pilot/` (`00_pilot_report.md`, `10_go_nogo_rv_pilot.json`).
+
+### Success / fail branching
+- **PASS** → plumbing confirmed; may revisit multi-TF **on RV (or new target)** later  
+- **FAIL** → try Option B (large-move classification) or rethink features/horizon — still no multi-TF/pairs
+
+### Why
+Attack a target more likely to contain signal (volatility clustering) before spending more GPU on multi-TF fusion.
+
+---
+
 ## 2026-08-14 — Milder optimization (LR / weight decay / cosine)
 
 ### What changed

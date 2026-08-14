@@ -93,6 +93,9 @@ def build_dataset(cfg, fold_start, fold_end, mode: str) -> MultiTFDataset:
         fold_end=fold_end,
         vol_window=data.get("vol_window", 24),
         target_clip=data.get("target_clip", 5.0),
+        target_type=data.get("target_type", "return"),
+        tradable_tfs=data.get("tradable_tfs"),
+        rv_log_transform=bool(data.get("rv_log_transform", True)),
     )
 
 
