@@ -15,7 +15,6 @@ experiments/
 design/
 notebooks/
 *.ipynb
-CHANGELOG.md
 docs/
 
 # --- Python ---
