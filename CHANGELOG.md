@@ -12,6 +12,38 @@ Format per entry:
 
 ---
 
+## 2026-08-15 — Fair multi-TF vs single-TF on RV measured (LOSES)
+
+### What happened
+Kaggle T4 full run of `scripts/run_rv_comparison.py`. Pack:  
+`Results/exp_eurusd_rv_multi_tf_pilot_pack - 15-08-26 1900Hrs/` (~27 min, rc=0).
+
+| Check | Result |
+|-------|--------|
+| Fair bar (MTP vs single-TF) | **LOSES** |
+| Mean pinball MTP / STF / HAR | 0.1240 / **0.1201** / 0.1248 |
+| Mean H=12 corr MTP / STF / HAR | 0.399 / **0.432** / 0.292 |
+| Folds MTP wins pinball | **0/6** |
+| Folds MTP wins corr | 3/6 |
+| Single-TF vs standalone pilot | Matches (pilot 0.1202 / 0.437) |
+| Mean best epoch MTP / STF | ~6 / ~14 |
+| Gates | Near-uniform (~1/6) |
+
+### Decision
+- **Champion = single-TF RV.** Fusion does not help on this target with static gates.
+- Stage 2 (capacity / cross-attention) and Stage 3 (pairs) stay **blocked**.
+- Persistence is a bad vol baseline (corr −0.24); HAR is real but loses to single-TF.
+- Paper can use this pack as an honest negative multi-TF ablation on a learnable target.
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| “MTP has skill (corr 0.40) so fusion works” | Fair bar is vs single-TF, not vs zero/HAR. 0.40 < 0.43 and 0/6 pinball. |
+| Earlier MTP best epoch looks like “faster learning” | It is earlier overfit (5× params, unused gates). |
+| Persistence corr negative | Do not use raw last-H RV as the classical champion; HAR is the one that matters. |
+
+---
+
 ## 2026-08-15 — Fair multi-TF vs single-TF on realized vol (code)
 
 ### What changed
