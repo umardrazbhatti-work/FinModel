@@ -33,10 +33,12 @@ Format per entry:
 Pilot showed RV is learnable. Next evidence bar is the original thesis: does multi-TF fusion beat single-TF **on that target**, under identical conditions.
 
 ### How to run
+**Full run = Kaggle only** (re-upload local notebook; `EXPERIMENT_MODE = "rv_multi_tf"`; Internet ON; GPU T4; clone `main`).
+
+Local smoke only:
 ```bash
-python scripts/run_rv_comparison.py --config configs/eurusd_rv_multi_tf.yaml
+python scripts/run_rv_comparison.py --config configs/eurusd_rv_multi_tf.yaml --max-folds 1 --max-epochs 1
 ```
-Kaggle: re-upload the local notebook; `EXPERIMENT_MODE = "rv_multi_tf"`; Internet ON; GPU T4; pull `main`.
 
 ### Success / fail
 - **BEATS** → Stage 2 architecture may open (one change at a time)

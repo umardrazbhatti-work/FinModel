@@ -36,25 +36,22 @@ python scripts/run_rv_pilot.py --config configs/pilot_eurusd_rv_single_tf.yaml
 python scripts/run_walk_forward.py --config configs/eurusd_1h.yaml
 ```
 
-## Kaggle (~12h full run)
+## Kaggle (full experiments — not local)
 
-1. Upload `kaggle_upload/mtp_aligned_parquet.zip` as a Kaggle dataset (`aligned/*.parquet`).
-2. Upload the local notebook `notebooks/kaggle_mtp_walk_forward.ipynb` to Kaggle (not in this git repo).
-3. Set `GITHUB_REPO_URL` (`https://github.com/umardrazbhatti-work/FinModel.git`) in the notebook.
-   Dataset paths may appear as `/kaggle/input/datasets/<user>/mtp-aligned-parquet/aligned/` — the notebook searches recursively.
-4. Enable **Internet + GPU**, then Run All.
-   - Prefer **GPU T4** (works with stock Kaggle PyTorch).
-   - **Tesla P100** is sm_60; recent Kaggle torch (cu128) has no kernels for it. The notebook reinstalls `torch==2.1.2+cu118` automatically when needed.
-5. Download `/kaggle/working/exp_eurusd_kaggle_12h_analysis_pack.zip` (20–30+ analysis files) for offline review.
+Full walk-forward runs belong on **Kaggle GPU T4**. Local machine: unit tests + 1-fold/1–2-epoch smoke only.
 
-Runtime config: `configs/kaggle_eurusd_12h.yaml`
-- `max_epochs=60` (ceiling), `early_stopping_patience=12`
-- `max_folds=6`, expanding window
-- single-TF baseline with `baseline_max_epochs=40`
+1. Attach dataset `mtp-aligned-parquet` (`aligned/*.parquet`; notebook searches recursively).
+2. Re-upload the local notebook `notebooks/kaggle_mtp_walk_forward.ipynb` (not in git) if mode/config cells changed.
+3. `GITHUB_REPO_URL` = `https://github.com/umardrazbhatti-work/FinModel.git`, branch `main`.
+4. Internet ON + **GPU T4**, then Run All.
+   - P100 / sm_60: notebook reinstalls `torch==2.1.2+cu118`.
+5. Default mode `EXPERIMENT_MODE = "rv_multi_tf"`:
+   - Script: `scripts/run_rv_comparison.py`
+   - Config: `configs/eurusd_rv_multi_tf.yaml`
+   - Download: `/kaggle/working/exp_eurusd_rv_multi_tf_pilot_pack.zip`
 
-```bash
-python scripts/run_walk_forward.py --config configs/kaggle_eurusd_12h.yaml
-```
+Legacy return-task (paused): set `EXPERIMENT_MODE = "mtp_return"` and download  
+`/kaggle/working/exp_eurusd_kaggle_12h_analysis_pack.zip`.
 
 ## Design (v1 locked)
 
