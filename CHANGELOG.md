@@ -12,6 +12,84 @@ Format per entry:
 
 ---
 
+## 2026-08-15 — Fair multi-TF vs single-TF on realized vol (code)
+
+### What changed
+1. Config `configs/eurusd_rv_multi_tf.yaml`:
+   - Same log-RV target, H=4/12, folds, optim as the single-TF pilot
+   - Inputs: all 6 TFs; `tradable_tfs: [1h]` only
+   - No context (second change stays off)
+   - Identical epoch/patience for MTP and single-TF (60 / 12)
+2. `scripts/run_rv_comparison.py` trains MTP + single-TF on the same loaders and scores both
+3. Classical baselines in the same run (`src/baselines/har_rv.py`):
+   - lagged-RV persistence
+   - HAR-OLS on past log-RV windows {4, 12, 24, 120} + residual quantiles
+4. Go/nogo is three-way: **BEATS / MATCHES / LOSES** vs single-TF on pinball + primary corr
+5. Shared `corr_and_r2` / `evaluate_rv_skill` in `src/evaluation/metrics.py`
+6. Walk-forward loss now uses `data.tradable_tfs` instead of a hardcoded `30m/1h/4h`
+7. Local Kaggle notebook default mode is `rv_multi_tf` (notebook is not on GitHub)
+
+### Why
+Pilot showed RV is learnable. Next evidence bar is the original thesis: does multi-TF fusion beat single-TF **on that target**, under identical conditions.
+
+### How to run
+```bash
+python scripts/run_rv_comparison.py --config configs/eurusd_rv_multi_tf.yaml
+```
+Kaggle: re-upload the local notebook; `EXPERIMENT_MODE = "rv_multi_tf"`; Internet ON; GPU T4; pull `main`.
+
+### Success / fail
+- **BEATS** → Stage 2 architecture may open (one change at a time)
+- **MATCHES** → fusion not harmful; do not expand architecture yet
+- **LOSES** → single-TF remains champion; no pairs / no capacity
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| Weaker single-TF budget (40/10) from the return runs | This comparison uses 60/12 for both |
+| Adding macro context at the same time | Would bundle two upgrades; context stays off |
+| Official PASS vs hist-mean only | Fair bar is single-TF; HAR is extra context |
+
+---
+
+## 2026-08-15 — Single-TF realized-vol pilot measured (PASS)
+
+### What happened
+Full Kaggle T4 run of `scripts/run_rv_pilot.py` (Stage 1.4 Option A). Pack at  
+`Results/exp_eurusd_rv_single_tf_pilot_pilot_pack - 15-08-26 1600Hrs/` (~9 min, rc=0).
+
+| Check | Result |
+|-------|--------|
+| Official RV gate (mean corr > 0.15, majority folds) | **PASS** |
+| Mean / median primary H=12 corr(q50, log-RV) | **0.437 / 0.429** |
+| Folds pass | **6/6** (min 0.353) |
+| Mean test pinball vs hist-mean | **0.120 vs 0.213** (~43% lower) |
+| Best epoch | 12–33 (not 1–2) |
+| H=4 corr (secondary) | 0.43–0.57, R² always > 0 |
+
+### Why it matters
+Same stack that produced corr≈0 on return quantiles now extracts OOS vol-ranking skill. Confirms the deep-diagnostic call: **target was the bottleneck, not plumbing**.
+
+### Verdict constraints
+- Under-dispersed (std_pred/std_y ≈ 0.4–0.6); H=12 R² negative on 3/6 folds — ranks well, shrinks too much.
+- No HAR / lagged-RV baseline yet; do not claim the Transformer beats classical vol.
+- No econ; `directional_accuracy=1.0` is an RV>0 artifact — ignore.
+- Multi-TF still untested on this target.
+
+### Decision
+- Option B (large-move class.) **dropped**.
+- Next: **multi-TF vs single-TF on RV**, same folds/optim; add a cheap lagged-RV/HAR baseline in that run.
+- Still **no** capacity, cross-attention, or new pairs.
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| Celebrate zero-baseline smash on log-RV | Zero is a straw man; hist-mean (and soon HAR) is the bar. |
+| Cite dir-acc = 100% | Metric is return-signed; meaningless on strictly positive RV. |
+| Jump to multi-TF without a vol champion | Repeat of Stage 0 “PASS vs zero, lose vs single-TF”. Ship HAR/lagged-RV in the same comparison run. |
+
+---
+
 ## 2026-08-14 — Target pivot: single-TF realized-vol pilot (post deep diagnostic)
 
 ### Decision

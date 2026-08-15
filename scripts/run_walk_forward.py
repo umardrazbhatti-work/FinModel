@@ -127,7 +127,7 @@ def train_model_on_fold(
     tr = cfg["training"]
     loss_fn = MultiQuantilePinballLoss(
         quantiles=cfg["data"]["quantiles"],
-        tradable_tfs=["30m", "1h", "4h"],
+        tradable_tfs=list(cfg["data"].get("tradable_tfs") or ["30m", "1h", "4h"]),
         entropy_weight=float(cfg["model"].get("gate_entropy_weight", 0.01)),
     )
     epochs = int(max_epochs if max_epochs is not None else tr["max_epochs"])

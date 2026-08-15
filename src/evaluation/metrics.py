@@ -105,6 +105,61 @@ def baseline_predict_zero(
     return out
 
 
+def corr_and_r2(pred: np.ndarray, y: np.ndarray, mask: np.ndarray) -> dict:
+    """Pearson corr and R^2 of pred vs y on mask>0.5."""
+    m = mask > 0.5
+    if m.sum() < 10:
+        return {
+            "corr": float("nan"),
+            "r2": float("nan"),
+            "n": int(m.sum()),
+            "std_pred": float("nan"),
+            "std_y": float("nan"),
+        }
+    p, t = pred[m], y[m]
+    if np.std(p) < 1e-12 or np.std(t) < 1e-12:
+        corr = float("nan")
+    else:
+        corr = float(np.corrcoef(p, t)[0, 1])
+    ss_res = float(np.sum((t - p) ** 2))
+    ss_tot = float(np.sum((t - t.mean()) ** 2)) + 1e-12
+    r2 = 1.0 - ss_res / ss_tot
+    return {
+        "corr": corr,
+        "r2": float(r2),
+        "n": int(m.sum()),
+        "std_pred": float(np.std(p)),
+        "std_y": float(np.std(t)),
+    }
+
+
+def evaluate_rv_skill(
+    predictions: Dict[str, np.ndarray],
+    targets: Dict[str, np.ndarray],
+    masks: Dict[str, np.ndarray],
+    quantiles: List[float],
+    primary_tf: str,
+) -> dict:
+    """OOS corr / R^2 of q50 vs target on each horizon of the primary TF."""
+    try:
+        med_i = list(quantiles).index(0.5)
+    except ValueError:
+        med_i = len(quantiles) // 2
+    pred = predictions[primary_tf]
+    y = targets[primary_tf]
+    m = masks[primary_tf]
+    per_h = []
+    for h in range(pred.shape[1]):
+        sk = corr_and_r2(pred[:, h, med_i], y[:, h], m[:, h])
+        per_h.append({"horizon_idx": h, **sk})
+    corrs = [x["corr"] for x in per_h if np.isfinite(x["corr"])]
+    return {
+        "per_horizon": per_h,
+        "mean_corr": float(np.mean(corrs)) if corrs else float("nan"),
+        "best_horizon_corr": float(np.max(corrs)) if corrs else float("nan"),
+    }
+
+
 def baseline_historical_mean(
     train_targets: Dict[str, np.ndarray],
     train_masks: Dict[str, np.ndarray],

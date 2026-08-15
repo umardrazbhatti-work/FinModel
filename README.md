@@ -23,10 +23,16 @@ python -m pytest tests/ -v
 Place aligned parquet files in `data/aligned/` (see dataset on Kaggle).
 
 ```bash
-# single fold
+# single fold (return task)
 python scripts/train_fold.py --config configs/eurusd_1h.yaml --fold 0
 
-# full walk-forward
+# fair multi-TF vs single-TF on realized vol (current Stage 1 experiment)
+python scripts/run_rv_comparison.py --config configs/eurusd_rv_multi_tf.yaml
+
+# single-TF realized-vol pilot (already PASS)
+python scripts/run_rv_pilot.py --config configs/pilot_eurusd_rv_single_tf.yaml
+
+# full walk-forward (legacy return task)
 python scripts/run_walk_forward.py --config configs/eurusd_1h.yaml
 ```
 

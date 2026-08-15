@@ -1,0 +1,88 @@
+# Stage 1.7 — fair multi-TF vs single-TF on realized vol (EURUSD only)
+# Same target / horizons / folds / optim as the single-TF RV pilot.
+# One controlled change: MTP sees all 6 TFs; single-TF still sees 1h only.
+# Classical lagged-RV (persistence) + HAR-OLS run in the same script (no extra GPU).
+#
+# Fair bar: MTP mean OOS pinball < single-TF and corr not worse.
+# Do not add context, capacity, pairs, or cross-attention in this run.
+
+project:
+  name: mtp-transformer-rv-multi-tf
+  seed: 42
+
+data:
+  data_dir: data/aligned
+  pair: EURUSD
+  tfs: ["5m", "15m", "30m", "1h", "4h", "1d"]
+  primary_tf: "1h"
+  lookback:
+    5m: 96
+    15m: 64
+    30m: 48
+    1h: 72
+    4h: 42
+    1d: 60
+  horizons:
+    1h: [4, 12]
+  tradable_tfs: ["1h"]
+  target_type: realized_vol
+  rv_log_transform: true
+  quantiles: [0.1, 0.5, 0.9]
+  cost_threshold: 0.0001
+  vol_window: 24
+  target_clip: null
+  feature_cols: ["open", "high", "low", "close", "volume"]
+  # Context is a second change — keep off so only extra TFs differ from the pilot.
+  context_cols: []
+
+model:
+  d_model: 64
+  n_layers: 3
+  n_heads: 4
+  dim_feedforward: 128
+  dropout: 0.1
+  patch_len: 16
+  gate_temperature: 1.0
+  # MTP only; single-TF runner forces 0
+  gate_entropy_weight: 0.01
+  use_revin: true
+  use_context: false
+
+training:
+  batch_size: 64
+  max_epochs: 60
+  lr: 0.0001
+  weight_decay: 0.0005
+  lr_scheduler: cosine
+  cosine_eta_min: 0.000001
+  grad_clip: 1.0
+  early_stopping_patience: 12
+  num_workers: 0
+  log_every: 100
+  # Identical budget for single-TF (unlike the return-task 40/10 shortcut)
+  baseline_max_epochs: 60
+  baseline_early_stopping_patience: 12
+
+walk_forward:
+  min_train_bars: 5000
+  val_bars: 1000
+  test_bars: 1000
+  step_bars: 1500
+  purge_bars: 24
+  mode: expanding
+  max_folds: 6
+
+evaluation:
+  success_corr: 0.15
+  primary_eval_tf: "1h"
+  primary_eval_horizon_idx: 1   # 12-bar RV (index 1 in [4, 12])
+  prediction_sample_rows: 500
+  # 1h HAR windows: 4h, 12h, 1d, ~1 week of 1h bars
+  har_windows: [4, 12, 24, 120]
+  # "matches" band for the fair bar
+  pinball_match_rel: 0.01
+  corr_match_abs: 0.02
+
+output:
+  dir: outputs
+  experiment_name: exp_eurusd_rv_multi_tf

@@ -28,6 +28,7 @@ from src.evaluation.metrics import (
     baseline_historical_mean,
     baseline_predict_zero,
     compute_statistical_metrics,
+    evaluate_rv_skill,
 )
 from src.losses import MultiQuantilePinballLoss
 from src.training import MTPTrainer, build_optimizer_and_scheduler, generate_walk_forward_folds
@@ -64,41 +65,6 @@ def build_dataset(cfg, fold_start, fold_end, mode: str) -> MultiTFDataset:
         tradable_tfs=data.get("tradable_tfs"),
         rv_log_transform=bool(data.get("rv_log_transform", True)),
     )
-
-
-def corr_and_r2(pred: np.ndarray, y: np.ndarray, mask: np.ndarray) -> dict:
-    m = mask > 0.5
-    if m.sum() < 10:
-        return {"corr": float("nan"), "r2": float("nan"), "n": int(m.sum())}
-    p, t = pred[m], y[m]
-    if np.std(p) < 1e-12 or np.std(t) < 1e-12:
-        corr = float("nan")
-    else:
-        corr = float(np.corrcoef(p, t)[0, 1])
-    ss_res = float(np.sum((t - p) ** 2))
-    ss_tot = float(np.sum((t - t.mean()) ** 2)) + 1e-12
-    r2 = 1.0 - ss_res / ss_tot
-    return {"corr": corr, "r2": float(r2), "n": int(m.sum()), "std_pred": float(np.std(p)), "std_y": float(np.std(t))}
-
-
-def evaluate_rv_skill(predictions, targets, masks, quantiles, primary_tf: str) -> dict:
-    try:
-        med_i = list(quantiles).index(0.5)
-    except ValueError:
-        med_i = len(quantiles) // 2
-    per_h = []
-    pred = predictions[primary_tf]
-    y = targets[primary_tf]
-    m = masks[primary_tf]
-    for h in range(pred.shape[1]):
-        sk = corr_and_r2(pred[:, h, med_i], y[:, h], m[:, h])
-        per_h.append({"horizon_idx": h, **sk})
-    corrs = [x["corr"] for x in per_h if np.isfinite(x["corr"])]
-    return {
-        "per_horizon": per_h,
-        "mean_corr": float(np.mean(corrs)) if corrs else float("nan"),
-        "best_horizon_corr": float(np.max(corrs)) if corrs else float("nan"),
-    }
 
 
 def main() -> None:
