@@ -1,0 +1,80 @@
+# Series M-A-4h — independent 4h specialist on its own future log-RV (EURUSD only)
+# Same recipe as the 1h RV champion: log-RV, q=0.1/0.5/0.9, H=[4, 12] bars on this TF,
+# same optim + expanding walk-forward bar counts.
+#
+# Wall-clock: H=4 -> 16h; H=12 -> 48h (2d). Recorded in the pack verdict.
+# HAR windows are calendar-matched to the 1h champion (4h / 12h / 1d / 5d).
+# Lookback 42 is the locked 4h design default (not a capacity change).
+#
+# Success: mean OOS corr(q50, log-RV) > 0.15, majority folds pass,
+#          pinball < hist-mean AND < HAR.
+# Do not start M-A-30m or B/C/D until this pack is scored.
+
+project:
+  name: mtp-transformer-rv-ma-4h
+  seed: 42
+
+data:
+  data_dir: data/aligned
+  pair: EURUSD
+  tfs: ["4h"]
+  primary_tf: "4h"
+  lookback:
+    4h: 42
+  horizons:
+    4h: [4, 12]
+  tradable_tfs: ["4h"]
+  target_type: realized_vol
+  rv_log_transform: true
+  quantiles: [0.1, 0.5, 0.9]
+  cost_threshold: 0.0001
+  vol_window: 24
+  target_clip: null
+  feature_cols: ["open", "high", "low", "close", "volume"]
+  context_cols: []
+
+model:
+  d_model: 64
+  n_layers: 3
+  n_heads: 4
+  dim_feedforward: 128
+  dropout: 0.1
+  patch_len: 16
+  gate_temperature: 1.0
+  gate_entropy_weight: 0.0
+  use_revin: true
+  use_context: false
+
+training:
+  batch_size: 64
+  max_epochs: 60
+  lr: 0.0001
+  weight_decay: 0.0005
+  lr_scheduler: cosine
+  cosine_eta_min: 0.000001
+  grad_clip: 1.0
+  early_stopping_patience: 12
+  num_workers: 0
+  log_every: 100
+
+walk_forward:
+  min_train_bars: 5000
+  val_bars: 1000
+  test_bars: 1000
+  step_bars: 1500
+  purge_bars: 24
+  mode: expanding
+  max_folds: 6
+
+evaluation:
+  success_corr: 0.15
+  primary_eval_tf: "4h"
+  primary_eval_horizon_idx: 1   # 12-bar RV (48h wall-clock)
+  prediction_sample_rows: 500
+  # Calendar-matched to 1h HAR [4, 12, 24, 120] hours
+  har_windows: [1, 3, 6, 30]
+  require_har: true
+
+output:
+  dir: outputs
+  experiment_name: exp_eurusd_rv_ma_4h

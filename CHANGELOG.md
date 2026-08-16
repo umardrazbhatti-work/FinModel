@@ -12,6 +12,48 @@ Format per entry:
 
 ---
 
+## 2026-08-16 — Series M-A-4h specialist (code ready; full run = Kaggle)
+
+### What changed
+1. Config `configs/eurusd_rv_ma_4h.yaml`:
+   - EURUSD **4h only** → 4h log-RV, horizons **[4, 12] bars** (16h / 48h wall-clock)
+   - Same optim and walk-forward **bar counts** as the 1h RV champion (60/12, 6 expanding folds)
+   - HAR windows **[1, 3, 6, 30]** = calendar match to 1h `[4, 12, 24, 120]` (4h / 12h / 1d / 5d)
+   - Lookback 42 (locked 4h design default)
+2. `scripts/run_rv_pilot.py` is now the Series M-A specialist runner:
+   - HAR-OLS + lagged-RV persistence scored on every fold
+   - Wall-clock horizons written into `10_go_nogo_rv_pilot.json` / report
+   - Go/nogo: corr > 0.15 + majority folds **and** pinball < hist-mean **and** < HAR
+3. Helpers: `tf_bar_hours` / `horizon_wall_clock` / `specialist_rv_verdict`
+4. Tests: `tests/test_rv_specialist.py`
+5. Local notebook default mode is `rv_ma_4h` (notebook is not on GitHub)
+
+### Why
+Gated all-TF MTP lost the fair bar on RV. Series M starts with independent specialists. 4h is the first new clock after the 1h champion.
+
+### How to run
+**Full run = Kaggle only** (re-upload local notebook; `EXPERIMENT_MODE = "rv_ma_4h"`; Internet ON; GPU T4; clone `main`).
+
+Local smoke only:
+```bash
+python scripts/run_rv_pilot.py --config configs/eurusd_rv_ma_4h.yaml --max-folds 1 --max-epochs 1
+```
+
+Download: `/kaggle/working/exp_eurusd_rv_ma_4h_pilot_pack.zip`
+
+### Success / fail
+- **PASS** → 4h is a Series M specialist; next is **M-A-30m** (not B/C/D yet)
+- **FAIL** → park 4h; do not feed it into hierarchy / features / ensemble
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| Same walk-forward *bar* counts on 4h are ~4× longer in calendar time | Intentional (same protocol). Record wall-clock in the verdict; do not silently rescale folds. |
+| HAR windows copied as `[4, 12, 24, 120]` 4h-bars | That would be weeks, not the 1h calendar recipe. Use `[1, 3, 6, 30]`. |
+| Starting 30m / M-B in the same Kaggle session | One clock per run. 30m waits for the 4h pack. |
+
+---
+
 ## 2026-08-15 — Fair multi-TF vs single-TF on RV measured (LOSES)
 
 ### What happened

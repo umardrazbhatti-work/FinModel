@@ -133,6 +133,42 @@ def corr_and_r2(pred: np.ndarray, y: np.ndarray, mask: np.ndarray) -> dict:
     }
 
 
+def specialist_rv_verdict(
+    mean_corr: float,
+    frac_folds_pass_corr: float,
+    mean_pinball: float,
+    mean_hist_mean_pinball: float,
+    mean_har_pinball: Optional[float] = None,
+    success_corr: float = 0.15,
+    require_har: bool = True,
+) -> dict:
+    """Series M-A go/nogo: corr bar + beat hist-mean + beat HAR (when present)."""
+    pass_corr = bool(
+        np.isfinite(mean_corr)
+        and mean_corr > float(success_corr)
+        and frac_folds_pass_corr >= 0.5
+    )
+    beats_hist = bool(
+        np.isfinite(mean_pinball)
+        and np.isfinite(mean_hist_mean_pinball)
+        and mean_pinball < mean_hist_mean_pinball
+    )
+    if mean_har_pinball is None or not np.isfinite(mean_har_pinball):
+        beats_har: Optional[bool] = None
+        har_ok = not require_har
+    else:
+        beats_har = bool(mean_pinball < float(mean_har_pinball))
+        har_ok = beats_har
+    return {
+        "pass_corr": pass_corr,
+        "beats_hist_mean": beats_hist,
+        "beats_har": beats_har,
+        "pass": bool(pass_corr and beats_hist and har_ok),
+        "require_har": bool(require_har),
+        "success_corr_threshold": float(success_corr),
+    }
+
+
 def evaluate_rv_skill(
     predictions: Dict[str, np.ndarray],
     targets: Dict[str, np.ndarray],

@@ -79,6 +79,25 @@ def _normalize_tf(tf: str) -> str:
     return tf
 
 
+def tf_bar_hours(tf: str) -> float:
+    """Wall-clock hours represented by one bar of `tf`."""
+    key = _normalize_tf(tf)
+    if key not in TF_DELTA:
+        raise KeyError(f"Unknown timeframe {tf!r}")
+    return float(TF_DELTA[key] / pd.Timedelta(hours=1))
+
+
+def horizon_wall_clock(tf: str, horizons: Sequence[int]) -> List[Dict[str, float]]:
+    """Map horizon bar counts to hours/days on this TF (for verdicts)."""
+    hours = tf_bar_hours(tf)
+    out: List[Dict[str, float]] = []
+    for raw in horizons:
+        bars = int(raw)
+        hh = float(bars) * hours
+        out.append({"bars": float(bars), "hours": hh, "days": hh / 24.0})
+    return out
+
+
 def resolve_parquet_path(data_dir: Union[str, Path], pair: str, tf: str) -> Path:
     """Resolve aligned parquet path for a pair/TF, handling 1d/daily naming."""
     data_dir = Path(data_dir)
