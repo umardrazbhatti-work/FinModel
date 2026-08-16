@@ -12,6 +12,67 @@ Format per entry:
 
 ---
 
+## 2026-08-16 — Series M-A-30m specialist (code ready; full run = Kaggle)
+
+### What changed
+1. Config `configs/eurusd_rv_ma_30m.yaml`:
+   - EURUSD **30m only** → 30m log-RV, horizons **[4, 12] bars** (2h / 6h wall-clock)
+   - Same optim and walk-forward bar counts as the 1h champion
+   - HAR windows **[8, 24, 48, 240]** = calendar match to 1h `[4, 12, 24, 120]` (4h / 12h / 1d / 5d)
+   - Lookback 48 (locked 30m design default)
+2. Local notebook default mode is `rv_ma_30m` (re-upload required)
+
+### Why
+M-A-4h failed the specialist bar. 30m is the next independent clock in the locked Series M order.
+
+### How to run
+**Full run = Kaggle only** (re-upload notebook; `EXPERIMENT_MODE = "rv_ma_30m"`; Internet ON; GPU T4; clone `main`).
+
+Local smoke only:
+```bash
+python scripts/run_rv_pilot.py --config configs/eurusd_rv_ma_30m.yaml --max-folds 1 --max-epochs 1
+```
+
+Download: `/kaggle/working/exp_eurusd_rv_ma_30m_pilot_pack.zip`
+
+### Success / fail
+- **PASS** → 30m is a specialist; next is **M-A-15m** (then daily). M-D still needs ≥2 specialists (1h already counts).
+- **FAIL** → park 30m; do not feed it into B/C/D. 15m/daily still follow the plan only if the first-wave pair (4h+30m) rule is revisited — default: stop the lower-TF wave and consider daily as the remaining higher clock.
+
+---
+
+## 2026-08-16 — Series M-A-4h measured (FAIL)
+
+### What happened
+Kaggle T4 full run of `scripts/run_rv_pilot.py` + `configs/eurusd_rv_ma_4h.yaml`. Pack:  
+`Results/exp_eurusd_rv_ma_4h_pilot_pack - 16-8-26 1300Hrs/` (~8 min, rc=0).
+
+| Check | Result |
+|-------|--------|
+| Official M-A gate | **FAIL** |
+| Mean primary H=12 (48h) corr | **0.058** (bar 0.15) |
+| Folds pass corr | **0/6** |
+| Mean pinball net / hist-mean / HAR | 0.139 / 0.218 / **0.122** |
+| HAR primary corr | **0.165** (HAR clears the corr bar) |
+| Persistence corr | 0.111 |
+| Best epoch | 4–25 (mean ~15) |
+| std(pred)/std(y) | 0.05–0.25 (collapsed) |
+
+### Decision
+- **Park the 4h specialist.** Do not feed this net into M-B / M-C / M-D.
+- Champion stays **1h single-TF RV**.
+- Next = **M-A-30m**. Do not retry 4h with more capacity or rescaled folds.
+- Honest note: secondary H=16h neural corr mean 0.215 — unofficial; primary stays H=48h.
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| Net beats hist-mean so “4h works” | Fair bar is HAR + corr. HAR wins pinball 5/6. |
+| H=16h corr 0.215 looks like a stealth PASS | Locked primary is H=12 bars. Do not move the horizon after seeing the pack. |
+| HAR has skill so use the 4h *checkpoint* as a filter | Use HAR’s lesson later as optional lagged-4h **scalars** (M-C), not this failed net. |
+
+---
+
 ## 2026-08-16 — Series M-A-4h specialist (code ready; full run = Kaggle)
 
 ### What changed
