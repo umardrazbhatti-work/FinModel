@@ -12,6 +12,34 @@ Format per entry:
 
 ---
 
+## 2026-08-17 — Freeze: results logged through S-2; S-3 deferred
+
+### What changed
+- Work **stops after S-2**. S-3 (Signal × Handler) is **not** started.
+- Freeze scoreboard: `Results/SCOREBOARD_THROUGH_S2.md` (local).
+- Plan: S-3 status `PENDING` (deferred), not in progress.
+
+### Why
+User asked to log everything through S-2 and resume S-3 later. Do not mix a half-started combo into this freeze.
+
+### Where the results live
+
+| Item | Path / ref |
+|------|------------|
+| Scoreboard (read this first) | `Results/SCOREBOARD_THROUGH_S2.md` |
+| S-2 verdict | `Results/exp_signal_s2_eurusd_1h - 17-08-26 1623Hrs/VERDICT.md` |
+| S-1 verdict | `Results/exp_signal_s1_eurusd_1h - 17-08-26 1615Hrs/VERDICT.md` |
+| Handler 1h | `Results/exp_eurusd_rv_single_tf_pilot_pilot_pack - 15-08-26 1600Hrs/` |
+| 30m / 15m / 4h / MTP-on-RV | `Results/exp_eurusd_rv_*` |
+| Code on GitHub | `main` `865c8ce` |
+
+### Locked at freeze
+- Handler = EURUSD 1h RV  
+- Signal = `h12_k2_logistic_ohlc` (exp +8.87e-5, 5/6)  
+- Next when resumed = **S-3 only**
+
+---
+
 ## 2026-08-17 — Module 1 / S-2 measured (PASS) — first Signal
 
 ### Decision (Kaggle vs local)
