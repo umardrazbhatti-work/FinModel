@@ -23,7 +23,10 @@ python -m pytest tests/ -v
 Place aligned parquet files in `data/aligned/` (see dataset on Kaggle).
 
 ```bash
-# Series M-A-30m specialist (current experiment) — local smoke only
+# Series M-A-15m specialist (current experiment) — local smoke only
+python scripts/run_rv_pilot.py --config configs/eurusd_rv_ma_15m.yaml --max-folds 1 --max-epochs 1
+
+# 30m specialist (already PASS)
 python scripts/run_rv_pilot.py --config configs/eurusd_rv_ma_30m.yaml --max-folds 1 --max-epochs 1
 
 # 4h specialist (already FAIL — parked)
@@ -49,12 +52,12 @@ Full walk-forward runs belong on **Kaggle GPU T4**. Local machine: unit tests + 
 3. `GITHUB_REPO_URL` = `https://github.com/umardrazbhatti-work/FinModel.git`, branch `main`.
 4. Internet ON + **GPU T4**, then Run All.
    - P100 / sm_60: notebook reinstalls `torch==2.1.2+cu118`.
-5. Default mode `EXPERIMENT_MODE = "rv_ma_30m"`:
+5. Default mode `EXPERIMENT_MODE = "rv_ma_15m"`:
    - Script: `scripts/run_rv_pilot.py`
-   - Config: `configs/eurusd_rv_ma_30m.yaml`
-   - Download: `/kaggle/working/exp_eurusd_rv_ma_30m_pilot_pack.zip`
+   - Config: `configs/eurusd_rv_ma_15m.yaml`
+   - Download: `/kaggle/working/exp_eurusd_rv_ma_15m_pilot_pack.zip`
 
-Other modes: `"rv_ma_4h"` (parked FAIL), `"rv_pilot"` (1h champion), `"rv_multi_tf"` (gated MTP ablation), `"mtp_return"` (legacy).
+Other modes: `"rv_ma_30m"` (PASS), `"rv_ma_4h"` (parked FAIL), `"rv_pilot"` (1h champion), `"rv_multi_tf"` (gated MTP ablation), `"mtp_return"` (legacy).
 
 ## Design (v1 locked)
 

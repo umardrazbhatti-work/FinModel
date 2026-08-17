@@ -1,0 +1,80 @@
+# Series M-A-15m — independent 15m specialist on its own future log-RV (EURUSD only)
+# Same recipe as the 1h RV champion: log-RV, q=0.1/0.5/0.9, H=[4, 12] bars on this TF,
+# same optim + expanding walk-forward bar counts.
+#
+# Wall-clock: H=4 -> 1h; H=12 -> 3h. Recorded in the pack verdict.
+# HAR windows are calendar-matched to the 1h champion (4h / 12h / 1d / 5d).
+# Lookback 64 is the locked 15m design default (not a capacity change).
+#
+# Success: mean OOS corr(q50, log-RV) > 0.15, majority folds pass,
+#          pinball < hist-mean AND < HAR.
+# 30m specialist PASSed. 4h is parked. Do not start B/C/D or daily until 15m is scored.
+
+project:
+  name: mtp-transformer-rv-ma-15m
+  seed: 42
+
+data:
+  data_dir: data/aligned
+  pair: EURUSD
+  tfs: ["15m"]
+  primary_tf: "15m"
+  lookback:
+    15m: 64
+  horizons:
+    15m: [4, 12]
+  tradable_tfs: ["15m"]
+  target_type: realized_vol
+  rv_log_transform: true
+  quantiles: [0.1, 0.5, 0.9]
+  cost_threshold: 0.0001
+  vol_window: 24
+  target_clip: null
+  feature_cols: ["open", "high", "low", "close", "volume"]
+  context_cols: []
+
+model:
+  d_model: 64
+  n_layers: 3
+  n_heads: 4
+  dim_feedforward: 128
+  dropout: 0.1
+  patch_len: 16
+  gate_temperature: 1.0
+  gate_entropy_weight: 0.0
+  use_revin: true
+  use_context: false
+
+training:
+  batch_size: 64
+  max_epochs: 60
+  lr: 0.0001
+  weight_decay: 0.0005
+  lr_scheduler: cosine
+  cosine_eta_min: 0.000001
+  grad_clip: 1.0
+  early_stopping_patience: 12
+  num_workers: 0
+  log_every: 100
+
+walk_forward:
+  min_train_bars: 5000
+  val_bars: 1000
+  test_bars: 1000
+  step_bars: 1500
+  purge_bars: 24
+  mode: expanding
+  max_folds: 6
+
+evaluation:
+  success_corr: 0.15
+  primary_eval_tf: "15m"
+  primary_eval_horizon_idx: 1   # 12-bar RV (3h wall-clock)
+  prediction_sample_rows: 500
+  # Calendar-matched to 1h HAR [4, 12, 24, 120] hours
+  har_windows: [16, 48, 96, 480]
+  require_har: true
+
+output:
+  dir: outputs
+  experiment_name: exp_eurusd_rv_ma_15m

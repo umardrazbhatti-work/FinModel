@@ -12,6 +12,69 @@ Format per entry:
 
 ---
 
+## 2026-08-17 — Series M-A-15m specialist (code ready; full run = Kaggle)
+
+### What changed
+1. Config `configs/eurusd_rv_ma_15m.yaml`:
+   - EURUSD **15m only** → 15m log-RV, horizons **[4, 12] bars** (1h / 3h wall-clock)
+   - Same optim and walk-forward bar counts as the 1h champion
+   - HAR windows **[16, 48, 96, 480]** = calendar match to 1h `[4, 12, 24, 120]` (4h / 12h / 1d / 5d)
+   - Lookback 64 (locked 15m design default)
+2. Local notebook default mode is `rv_ma_15m` (re-upload required)
+
+### Why
+M-A-30m PASSed. 15m is the next independent clock in the locked Series M order.
+
+### How to run
+**Full run = Kaggle only** (re-upload notebook; `EXPERIMENT_MODE = "rv_ma_15m"`; Internet ON; GPU T4; clone `main`).
+
+Local smoke only:
+```bash
+python scripts/run_rv_pilot.py --config configs/eurusd_rv_ma_15m.yaml --max-folds 1 --max-epochs 1
+```
+
+Download: `/kaggle/working/exp_eurusd_rv_ma_15m_pilot_pack.zip`
+
+### Success / fail
+- **PASS** → 15m is a specialist; next is **M-A-1d** (higher clock; also the remaining M-B candidate). M-D stays closed until 15m is scored.
+- **FAIL** → park 15m; do not feed it into B/C/D. Next remaining M-A clock is **daily**.
+
+---
+
+## 2026-08-17 — Series M-A-30m measured (PASS)
+
+### What happened
+Kaggle T4 full run of `scripts/run_rv_pilot.py` + `configs/eurusd_rv_ma_30m.yaml`. Pack:  
+`Results/exp_eurusd_rv_ma_30m_pilot_pack - 17-08-26 1500Hrs/` (~9 min, rc=0).
+
+| Check | Result |
+|-------|--------|
+| Official M-A gate | **PASS** |
+| Mean primary H=12 (6h) corr | **0.452** (bar 0.15) |
+| Folds pass corr | **6/6** (min 0.336) |
+| Mean pinball net / hist-mean / HAR | **0.126** / 0.227 / 0.130 |
+| HAR primary corr | 0.356 (HAR has skill; net still wins) |
+| Persistence corr | 0.086 |
+| Best epoch | 13–23 (mean ~19) |
+| std(pred)/std(y) | 0.53–0.78 |
+
+### Decision
+- **30m is a Series M specialist.** Second passing clock after 1h.
+- Champion stays **1h single-TF RV** (different target / wall-clock; 30m does not replace it).
+- M-D’s “≥2 specialists” gate is now met. **Do not start M-D yet.**
+- M-B stays blocked (30m is a *lower* clock; need daily).
+- Next = **M-A-15m**. Do not retry 4h.
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| 30m corr 0.452 > 1h 0.437 so swap the champion | Different clocks and horizons (6h vs 12h). Product default stays 1h until B/C/D beat it. |
+| Fold 1 loses HAR pinball so “not really a pass” | Official bar is **mean** pinball + majority corr. 5/6 pinball, 6/6 corr. Keep fold 1. |
+| Jump to M-D now that two specialists exist | One clock per run. Score 15m first (may become specialist #3). |
+| Use 30m as an M-B filter on 1h | Hierarchy needs a *higher* TF. 30m is not that. |
+
+---
+
 ## 2026-08-16 — Series M-A-30m specialist (code ready; full run = Kaggle)
 
 ### What changed
