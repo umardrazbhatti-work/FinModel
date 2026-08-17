@@ -1,0 +1,43 @@
+# Module 1 / S-2 — direction / large-move labels on EURUSD 1h
+# Full sweep in one replay: horizons x k x (persist | logistic OHLC | logistic+events).
+# Oracle is logged as a ceiling, never a winner.
+# S-3 (handler combo) is NOT in this run.
+# No Transformer. Local replay — Kaggle only if a cell PASSes.
+
+project:
+  name: signal-s2-eurusd-1h
+  seed: 42
+
+data:
+  data_dir: data/aligned
+  pair: EURUSD
+  tf: 1h
+  cost: 0.0001
+
+walk_forward:
+  min_train_bars: 5000
+  val_bars: 1000
+  test_bars: 1000
+  step_bars: 1500
+  purge_bars: 24
+  mode: expanding
+  max_folds: 6
+
+signal:
+  module: 1
+  experiment: S-2
+  periods_per_year: 6048
+  horizons: [4, 12, 24]
+  k_list: [0, 1, 2, 3]
+  models:
+    - persist
+    - logistic_ohlc
+    - logistic_evt
+
+evaluation:
+  min_mean_expectancy: 0.0
+  min_frac_folds: 0.5
+
+output:
+  dir: outputs
+  experiment_name: exp_signal_s2_eurusd_1h

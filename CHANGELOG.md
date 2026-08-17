@@ -12,6 +12,57 @@ Format per entry:
 
 ---
 
+## 2026-08-17 — Module 1 / S-2 measured (PASS) — first Signal
+
+### Decision (Kaggle vs local)
+S-2 is a **label/model sweep**, not a Transformer train. It belongs on this machine (same as S-1). Bundling S-2+S-3+nets into one Kaggle session would mix changes. **Do not run Kaggle for this pack.**
+
+### What happened
+Local replay (~7 s): horizons {4, 12, 24} × k {0,1,2,3} × persist / logistic-OHLC / logistic+events + oracle ceiling. Same 6 folds, 2-way 1-pip cost, non-overlapping holds.  
+Pack: `Results/exp_signal_s2_eurusd_1h - 17-08-26 1623Hrs/`
+
+| Check | Result |
+|-------|--------|
+| Official S-2 gate | **PASS** |
+| Locked Signal | **`h12_k2_logistic_ohlc`** |
+| Mean exp / folds | **+8.87e-5** / **5/6** |
+| 12h always-long / coin-flip | −3.1e-4 / −4.5e-4 |
+| 4h any model | FAIL |
+| Persist any H | FAIL |
+| Events at 12h | FAIL (hurt) |
+| Oracle 12h | +21.6e-4 (ceiling; not a Signal) |
+
+### Decision
+- First Signal is locked. Do not swap to 24h+events as default.
+- Next default = **S-3** (Handler sizes this Signal) — local.
+- Kaggle only if the next *single* question is “can a net beat this logistic on 12h k=2?”
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| Oracle looks like a trading system | Ceiling only. Never a winner. |
+| Seven winning keys so train seven nets | One champion. 12h k=2 OHLC logistic. |
+| Event 24h has higher exp so switch | Fewer trades, extra features, weaker fold fraction. Secondary. |
+| Short-heavy mix = “always short EUR” | 2017–18 window caveat. Do not overclaim. |
+
+---
+
+## 2026-08-17 — Module 1 / S-2 implemented (full label sweep)
+
+### What changed
+1. `src/signals/labels.py`, `features.py`, `logistic.py`, `s2_eval.py`
+2. Config `configs/signal_s2_eurusd_1h.yaml`
+3. Runner `scripts/run_signal_s2.py`
+4. Tests `tests/test_signal_s2.py`
+
+### How to run
+```bash
+python -m pytest tests/test_signal_s2.py -q
+python scripts/run_signal_s2.py --config configs/signal_s2_eurusd_1h.yaml
+```
+
+---
+
 ## 2026-08-17 — Module 1 / S-1 measured (FAIL)
 
 ### What happened
