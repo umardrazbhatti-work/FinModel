@@ -31,6 +31,9 @@ python -m pytest tests/ -v
 Place aligned parquet files in `data/aligned/` (see dataset on Kaggle).
 
 ```bash
+# Module 1 / S-1 — costed rule Signals (already FAIL — replay only)
+python scripts/run_signal_s1.py --config configs/signal_s1_eurusd_1h.yaml
+
 # Locked Trade Handler (Module 2) — size only, no direction
 python scripts/run_handler.py --config configs/handler_eurusd_1h.yaml
 # python scripts/run_handler.py --checkpoint path/to/best.pt

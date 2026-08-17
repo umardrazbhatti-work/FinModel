@@ -1,0 +1,51 @@
+# Module 1 / S-1 — costed rule-baseline Signals on EURUSD 1h
+# No neural net. Same walk-forward bar protocol as the locked 1h handler.
+# Success: a non-control rule with mean OOS expectancy > 0, majority folds,
+#          and better mean expectancy than always-long and coin-flip.
+
+project:
+  name: signal-s1-eurusd-1h
+  seed: 42
+
+data:
+  data_dir: data/aligned
+  pair: EURUSD
+  tf: 1h
+  # One-way cost (spread + slippage proxy). Flip long→short pays 2x.
+  cost: 0.0001
+
+walk_forward:
+  min_train_bars: 5000
+  val_bars: 1000
+  test_bars: 1000
+  step_bars: 1500
+  purge_bars: 24
+  mode: expanding
+  max_folds: 6
+
+signal:
+  module: 1
+  experiment: S-1
+  horizon_bars: 1
+  periods_per_year: 6048   # 24 * 252
+  rules:
+    - always_flat
+    - always_long
+    - coin_flip
+    - session_london
+    - session_ny
+    - session_overlap
+    - session_london_short_asia
+    - tod_london_open
+    - breakout_24
+    - breakout_48
+    - sma_drift_24
+    - tod_train_hours
+
+evaluation:
+  min_mean_expectancy: 0.0
+  min_frac_folds: 0.5
+
+output:
+  dir: outputs
+  experiment_name: exp_signal_s1_eurusd_1h

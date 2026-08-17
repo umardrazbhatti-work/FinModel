@@ -12,6 +12,53 @@ Format per entry:
 
 ---
 
+## 2026-08-17 — Module 1 / S-1 measured (FAIL)
+
+### What happened
+Local replay (no GPU, ~5 s) of 12 explicit EURUSD 1h rules on the same 6 expanding folds as the locked handler. Cost = 0.0001 one-way. Pack:  
+`Results/exp_signal_s1_eurusd_1h - 17-08-26 1615Hrs/`
+
+| Check | Result |
+|-------|--------|
+| Official S-1 gate | **FAIL** |
+| Winning rules | **none** |
+| Best non-control | `tod_train_hours` exp **−5.6e-6** (0/6 folds > 0) |
+| always_long | −1.24e-5 (1/6) |
+| coin_flip | −1.07e-4 (0/6) |
+| always_flat | 0 (best of the set) |
+
+### Decision
+- These rules are **not** Signals. Do not attach the locked Handler.
+- Next = **S-2** (longer-horizon / large-move direction). Not more RV clocks.
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| Least-negative rule looks like a near-win | `tod_train_hours` is almost always flat. Closer to zero ≠ edge. |
+| Attach handler to “shrink losses” | Forbidden until Signal expectancy > 0 alone. |
+| Unicode arrows in Windows logs | Use ASCII `->` (same old pitfall). |
+
+---
+
+## 2026-08-17 — Module 1 / S-1 implemented (costed rule baselines)
+
+### What changed
+1. `src/signals/` — explicit long/short/flat rules + `signal_verdict`
+2. Config `configs/signal_s1_eurusd_1h.yaml`
+3. Runner `scripts/run_signal_s1.py` (replay only; same WF as 1h handler)
+4. Tests `tests/test_signal_s1.py`
+
+### Why
+Handler is locked. Super goal needs a Signal with edge after costs. Rule baselines are the bar a learned Signal must beat.
+
+### How to run
+```bash
+python -m pytest tests/test_signal_s1.py -q
+python scripts/run_signal_s1.py --config configs/signal_s1_eurusd_1h.yaml
+```
+
+---
+
 ## 2026-08-17 — Module 2 leftover: M-A-15m measured (FAIL)
 
 ### What happened
