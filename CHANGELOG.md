@@ -12,6 +12,39 @@ Format per entry:
 
 ---
 
+## 2026-08-17 — Architecture lock: 6 modules; Trade Handler locked (Module 2)
+
+### What changed
+1. Super goal is now a **self-sufficient automated trading system**. All work must serve it.
+2. Official modules: (1) Signal / Alpha, (2) Trade Handler, (3) Execution, (4) Portfolio, (5) Monitoring, (6) Data.
+3. **Module 2 locked:** EURUSD 1h single-TF realized-vol is the Trade Handler (risk/sizing only).
+   - Code: `src/handler/` (`VolatilityTradeHandler`, inverse-vol `size_from_vol`)
+   - Config: `configs/handler_eurusd_1h.yaml`
+   - CLI: `scripts/run_handler.py`
+   - Tests: `tests/test_trade_handler.py`
+   - Handler **never** sets `side`. Signal owns direction.
+4. Series M extra clocks (15m / daily / 5m / B/C/D) are **optional later Module-2 upgrades**, not the main path.
+5. **Next research = Module 1 (S-1):** costed rule-baseline Signals on EURUSD.
+
+### Why
+A profitable auto-trader needs a Signal with edge after costs. The vol model is a finished risk module. Leaving it as an open specialist-hunt blocked the super goal.
+
+### How to run (handler smoke)
+```bash
+python -m pytest tests/test_trade_handler.py -q
+python scripts/run_handler.py --config configs/handler_eurusd_1h.yaml
+# optional: --checkpoint path/to/fold_5/best.pt
+```
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| More RV clocks = closer to a trader | Clocks improve a sizer, not a Signal. |
+| Combine handler with a coin-flip “to get automation” | Combo waits until Signal expectancy > 0 after costs. |
+| Handler emits long/short from vol | Forbidden. `side` is always null. |
+
+---
+
 ## 2026-08-17 — Series M-A-15m specialist (code ready; full run = Kaggle)
 
 ### What changed

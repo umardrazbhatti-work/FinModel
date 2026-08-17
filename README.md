@@ -1,14 +1,22 @@
-# MTP-Transformer
+# FinModel
 
-Multi-TF Gated Patch Transformer for financial forecasting research.
+Modular trading system. Super goal: a self-sufficient automated trader.
+
+| Module | Role | Status |
+|--------|------|--------|
+| 1 Signal / Alpha | Direction (long / short / flat) | Missing — next research |
+| 2 Trade Handler | Size / stand-aside from predicted vol | **Locked** (EURUSD 1h RV) |
+| 3–5 Execution / Portfolio / Monitoring | Automation | Blocked until Signal + Handler are validated together |
+| 6 Data | Leakage-free multi-TF parquet | Research-grade, largely done |
 
 ## Layout
 
 ```
-configs/          # YAML experiment configs
-src/              # library code (data, models, losses, training, evaluation)
+configs/          # YAML experiment + locked handler configs
+src/handler/      # Module 2 — Trade Handler (vol → size, never direction)
+src/              # data, models, losses, training, evaluation
 scripts/          # CLI entry points
-tests/            # unit tests (leakage, shapes, loss)
+tests/            # unit tests (leakage, shapes, loss, handler)
 requirements.txt
 ```
 
@@ -23,7 +31,11 @@ python -m pytest tests/ -v
 Place aligned parquet files in `data/aligned/` (see dataset on Kaggle).
 
 ```bash
-# Series M-A-15m specialist (current experiment) — local smoke only
+# Locked Trade Handler (Module 2) — size only, no direction
+python scripts/run_handler.py --config configs/handler_eurusd_1h.yaml
+# python scripts/run_handler.py --checkpoint path/to/best.pt
+
+# Optional leftover 15m specialist (handler upgrade candidate) — local smoke only
 python scripts/run_rv_pilot.py --config configs/eurusd_rv_ma_15m.yaml --max-folds 1 --max-epochs 1
 
 # 30m specialist (already PASS)
@@ -52,12 +64,10 @@ Full walk-forward runs belong on **Kaggle GPU T4**. Local machine: unit tests + 
 3. `GITHUB_REPO_URL` = `https://github.com/umardrazbhatti-work/FinModel.git`, branch `main`.
 4. Internet ON + **GPU T4**, then Run All.
    - P100 / sm_60: notebook reinstalls `torch==2.1.2+cu118`.
-5. Default mode `EXPERIMENT_MODE = "rv_ma_15m"`:
-   - Script: `scripts/run_rv_pilot.py`
-   - Config: `configs/eurusd_rv_ma_15m.yaml`
-   - Download: `/kaggle/working/exp_eurusd_rv_ma_15m_pilot_pack.zip`
+5. Optional leftover 15m specialist (`EXPERIMENT_MODE = "rv_ma_15m"`) — **not** the main path.  
+   Trade Handler is locked on 1h RV. Next research is Module 1 (Signal), which may not need Kaggle first.
 
-Other modes: `"rv_ma_30m"` (PASS), `"rv_ma_4h"` (parked FAIL), `"rv_pilot"` (1h champion), `"rv_multi_tf"` (gated MTP ablation), `"mtp_return"` (legacy).
+Other modes: `"rv_ma_30m"` (PASS), `"rv_ma_4h"` (parked FAIL), `"rv_pilot"` (1h handler champion), `"rv_multi_tf"` (gated MTP ablation), `"mtp_return"` (legacy).
 
 ## Design (v1 locked)
 

@@ -1,0 +1,81 @@
+# Module 2 — locked Trade Handler (EURUSD 1h realized-vol)
+# Research champion: single-TF RV pilot (corr 0.437, 6/6).
+# This file is the operational config. Do not change clocks or target
+# without a new handler version.
+
+project:
+  name: trade-handler-eurusd-1h
+  seed: 42
+
+data:
+  data_dir: data/aligned
+  pair: EURUSD
+  tfs: ["1h"]
+  primary_tf: "1h"
+  lookback:
+    1h: 72
+  horizons:
+    1h: [4, 12]
+  tradable_tfs: ["1h"]
+  target_type: realized_vol
+  rv_log_transform: true
+  quantiles: [0.1, 0.5, 0.9]
+  cost_threshold: 0.0001
+  vol_window: 24
+  target_clip: null
+  feature_cols: ["open", "high", "low", "close", "volume"]
+  context_cols: []
+
+model:
+  d_model: 64
+  n_layers: 3
+  n_heads: 4
+  dim_feedforward: 128
+  dropout: 0.1
+  patch_len: 16
+  gate_temperature: 1.0
+  gate_entropy_weight: 0.0
+  use_revin: true
+  use_context: false
+
+training:
+  batch_size: 64
+  max_epochs: 60
+  lr: 0.0001
+  weight_decay: 0.0005
+  lr_scheduler: cosine
+  cosine_eta_min: 0.000001
+  grad_clip: 1.0
+  early_stopping_patience: 12
+  num_workers: 0
+  log_every: 100
+
+walk_forward:
+  min_train_bars: 5000
+  val_bars: 1000
+  test_bars: 1000
+  step_bars: 1500
+  purge_bars: 24
+  mode: expanding
+  max_folds: 6
+
+evaluation:
+  success_corr: 0.15
+  primary_eval_tf: "1h"
+  primary_eval_horizon_idx: 1
+  prediction_sample_rows: 500
+
+handler:
+  module: 2
+  version: v1-eurusd-1h-rv
+  # Optional path to a fold checkpoint (Results/ or outputs/). Not on GitHub.
+  checkpoint: null
+  primary_horizon_idx: 1
+  min_multiplier: 0.0
+  max_multiplier: 2.0
+  max_log_width: 1.5
+  max_rv: null
+
+output:
+  dir: outputs
+  experiment_name: handler_eurusd_1h
