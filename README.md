@@ -35,7 +35,7 @@ Place aligned parquet files in `data/aligned/` (see dataset on Kaggle).
 python scripts/run_handler.py --config configs/handler_eurusd_1h.yaml
 # python scripts/run_handler.py --checkpoint path/to/best.pt
 
-# Optional leftover 15m specialist (handler upgrade candidate) — local smoke only
+# 15m specialist (already FAIL — parked; HAR wins pinball)
 python scripts/run_rv_pilot.py --config configs/eurusd_rv_ma_15m.yaml --max-folds 1 --max-epochs 1
 
 # 30m specialist (already PASS)
@@ -64,10 +64,8 @@ Full walk-forward runs belong on **Kaggle GPU T4**. Local machine: unit tests + 
 3. `GITHUB_REPO_URL` = `https://github.com/umardrazbhatti-work/FinModel.git`, branch `main`.
 4. Internet ON + **GPU T4**, then Run All.
    - P100 / sm_60: notebook reinstalls `torch==2.1.2+cu118`.
-5. Optional leftover 15m specialist (`EXPERIMENT_MODE = "rv_ma_15m"`) — **not** the main path.  
-   Trade Handler is locked on 1h RV. Next research is Module 1 (Signal), which may not need Kaggle first.
-
-Other modes: `"rv_ma_30m"` (PASS), `"rv_ma_4h"` (parked FAIL), `"rv_pilot"` (1h handler champion), `"rv_multi_tf"` (gated MTP ablation), `"mtp_return"` (legacy).
+5. Trade Handler is locked on 1h RV. Next research is Module 1 (Signal).  
+   Optional leftover modes: `"rv_ma_15m"` (parked FAIL), `"rv_ma_30m"` (PASS), `"rv_ma_4h"` (parked FAIL), `"rv_pilot"` (1h champion), `"rv_multi_tf"` (gated MTP ablation), `"mtp_return"` (legacy).
 
 ## Design (v1 locked)
 

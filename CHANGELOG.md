@@ -12,6 +12,37 @@ Format per entry:
 
 ---
 
+## 2026-08-17 — Module 2 leftover: M-A-15m measured (FAIL)
+
+### What happened
+Kaggle T4 full run of `scripts/run_rv_pilot.py` + `configs/eurusd_rv_ma_15m.yaml`. Pack:  
+`Results/exp_eurusd_rv_ma_15m_pilot_pack - 17-08-26 1600Hrs/` (~7 min, rc=0).
+
+| Check | Result |
+|-------|--------|
+| Official specialist gate | **FAIL** |
+| Mean primary H=12 (3h) corr | **0.454** (bar 0.15 — clears) |
+| Folds pass corr | **6/6** (min 0.257) |
+| Mean pinball net / hist-mean / HAR | 0.150 / 0.262 / **0.135** |
+| HAR primary corr | **0.417** |
+| Folds net wins pinball | 3/6 |
+| Best epoch | 11–16 |
+
+### Decision
+- **Park the 15m net.** Do not load it into Handler v1.
+- Locked handler stays **EURUSD 1h RV**.
+- 15m *series* has skill (HAR). Lagged HAR/RV **scalars** may be a later Module-2 upgrade — not this checkpoint.
+- **Next remains Module 1 / S-1.** Do not start daily or retry 15m.
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| Corr 0.45 looks like a specialist | Fair bar includes HAR pinball. Ranking without beating HAR is a fail. |
+| 3/6 folds beat HAR so “close enough” | Official bar is **mean** pinball. HAR wins the mean. |
+| 15m FAIL means reopen daily as the next clock | Handler is locked. Clock hunt is not the main path. |
+
+---
+
 ## 2026-08-17 — Architecture lock: 6 modules; Trade Handler locked (Module 2)
 
 ### What changed
