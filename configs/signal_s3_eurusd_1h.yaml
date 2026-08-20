@@ -1,0 +1,44 @@
+# Module 1+2 / S-3 — size locked survivors with the locked 1h RV handler.
+# Handler never sets side. Local replay only.
+
+project:
+  name: signal-s3-eurusd-1h
+  seed: 42
+
+data:
+  data_dir: data/aligned
+  pair: EURUSD
+  tf: 1h
+  cost: 0.0001
+
+walk_forward:
+  min_train_bars: 5000
+  val_bars: 1000
+  test_bars: 1000
+  step_bars: 1500
+  purge_bars: 24
+  mode: expanding
+  max_folds: 6
+
+signal:
+  module: 1
+  experiment: S-3
+  periods_per_year: 6048
+  start_usd: 100.0
+  unseen_months: 6
+  survivors:
+    - {id: rsi7_30_70_h12, hold: 12}
+    - {id: rsi9_30_70_h12, hold: 12}
+    - {id: willr_14_70_30_h12, hold: 24}
+
+handler:
+  module: 2
+  config: configs/handler_eurusd_1h.yaml
+  checkpoint_root: "../Results/exp_eurusd_rv_single_tf_pilot_pilot_pack - 15-08-26 1600Hrs"
+  device: cpu
+  lookback: 72
+  batch_size: 64
+
+output:
+  dir: outputs
+  experiment_name: exp_signal_s3_eurusd_1h

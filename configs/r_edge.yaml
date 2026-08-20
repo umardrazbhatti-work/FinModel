@@ -1,0 +1,39 @@
+# R-multiple Signal search. SL/TP, fixed 1% risk, ATR + session + structure filters.
+
+project:
+  name: r-edge
+  seed: 42
+
+data:
+  data_dir: data/aligned
+  pair: EURUSD
+  tf: 1h
+  cost: 0.0001
+  slip: 0.00005
+
+walk_forward:
+  min_train_bars: 5000
+  val_bars: 1000
+  test_bars: 1000
+  step_bars: 1500
+  purge_bars: 24
+  mode: expanding
+  max_folds: 6
+
+signal:
+  module: 1
+  experiment: r_edge
+  start_usd: 100.0
+  unseen_months: 6
+  periods_per_year: 6048
+  risk_frac: 0.01
+
+evaluation:
+  min_payoff: 1.8
+  min_pf: 1.5
+  min_sharpe: 1.2
+  max_dd: 0.25
+
+output:
+  dir: outputs
+  experiment_name: exp_r_edge

@@ -1,0 +1,40 @@
+project:
+  name: rules-w01-time
+  seed: 42
+
+data:
+  data_dir: data/aligned
+  pair: EURUSD
+  tf: 1h
+  cost: 0.0001
+
+walk_forward:
+  min_train_bars: 5000
+  val_bars: 1000
+  test_bars: 1000
+  step_bars: 1500
+  purge_bars: 24
+  mode: expanding
+  max_folds: 6
+
+signal:
+  module: 1
+  experiment: rule_factory
+  wave: 1
+  families: [time]
+  hold: 12
+  periods_per_year: 6048
+  start_usd: 100.0
+  unseen_months: 6
+
+evaluation:
+  min_mean_expectancy: 0.0
+  min_frac_folds: 0.5
+  max_pct_flat: 0.95
+  min_discovery_active: 30
+  min_unseen_active: 50
+  min_months_green: 4
+
+output:
+  dir: outputs
+  experiment_name: exp_rules_w01_time

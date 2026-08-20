@@ -4,9 +4,9 @@ Modular trading system. Super goal: a self-sufficient automated trader.
 
 | Module | Role | Status |
 |--------|------|--------|
-| 1 Signal / Alpha | Direction (long / short / flat) | Missing — next research |
+| 1 Signal / Alpha | Direction (long / short / flat) | **No live book.** S-2 2017-18 lock only. S-6 R-multiple **FAIL** (0 survivors). 100k factory names have no SL/TP. |
 | 2 Trade Handler | Size / stand-aside from predicted vol | **Locked** (EURUSD 1h RV) |
-| 3–5 Execution / Portfolio / Monitoring | Automation | Blocked until Signal + Handler are validated together |
+| 3–5 Execution / Portfolio / Monitoring | Automation | Blocked until a Signal + Handler combo is validated under S-6 bars |
 | 6 Data | Leakage-free multi-TF parquet | Research-grade, largely done |
 
 ## Layout
@@ -31,7 +31,15 @@ python -m pytest tests/ -v
 Place aligned parquet files in `data/aligned/` (see dataset on Kaggle).
 
 ```bash
-# Module 1 / S-2 — first Signal (12h k=2 logistic OHLC) — already PASS
+# Module 1 / S-6 — R-multiple SL/TP trend-breakout (already FAIL, 0 survivors)
+python scripts/run_r_factory.py
+python scripts/write_r_book.py
+
+# Module 1 / 100k oscillator factory (locked; invalid as a live book under S-6)
+python scripts/run_ultra_factory.py
+python scripts/write_rule_system_summary.py
+
+# Module 1 / S-2 — first Signal (12h k=2 logistic OHLC) — PASS on 2017-18, not a 2026 survivor
 python scripts/run_signal_s2.py --config configs/signal_s2_eurusd_1h.yaml
 
 # Module 1 / S-1 — next-bar rules (already FAIL)
@@ -70,7 +78,7 @@ Full walk-forward runs belong on **Kaggle GPU T4**. Local machine: unit tests + 
 3. `GITHUB_REPO_URL` = `https://github.com/umardrazbhatti-work/FinModel.git`, branch `main`.
 4. Internet ON + **GPU T4**, then Run All.
    - P100 / sm_60: notebook reinstalls `torch==2.1.2+cu118`.
-5. Trade Handler is locked on 1h RV. Next research is Module 1 (Signal).  
+5. Trade Handler is locked on 1h RV. Live Signal book is empty (S-6 FAIL). Do not Kaggle-train a return net.  
    Optional leftover modes: `"rv_ma_15m"` (parked FAIL), `"rv_ma_30m"` (PASS), `"rv_ma_4h"` (parked FAIL), `"rv_pilot"` (1h champion), `"rv_multi_tf"` (gated MTP ablation), `"mtp_return"` (legacy).
 
 ## Design (v1 locked)

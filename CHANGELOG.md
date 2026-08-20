@@ -12,6 +12,208 @@ Format per entry:
 
 ---
 
+## 2026-08-20 — Freeze: everything logged through S-6
+
+### What changed
+- Freeze scoreboard: `Results/SCOREBOARD_THROUGH_S6.md` (local).
+- README module table + how to run S-6 / factory / handler.
+- Plan snapshot, Signal queue, and findings already at S-6 FAIL (0 R-survivors).
+- Work **stops here**. Next session resumes from the freeze file + `Plan.md`.
+
+### Why
+User asked to log everything.
+
+### Locked at freeze
+- Handler = EURUSD 1h RV
+- Live Signal book = **none** (S-6 0 survivors; 100k factory invalid under SL/TP)
+- S-2 id `h12_k2_logistic_ohlc` remains the 2017-18 lock only
+- Do not drop payoff ≥ 1.8 or min unseen trades to salvage the GBPJPY ORB near-miss
+
+---
+
+## 2026-08-20 — R-multiple SL/TP protocol (0 survivors)
+
+### What changed
+New Module-1 protocol. Fixed-hold oscillator P&amp;L is **invalid** here.
+- Engine `src/signals/r_engine.py`: next-open entry, predefined ATR stop and R-target, pessimistic same-bar SL, optional 1R trail, 1% risk, spread+slippage.
+- Filters: ATR &gt; median, ADX structure (except London ORB), London/NY or overlap, first-bar fire only.
+- 324 named trend/breakout systems x 5 pairs = **1,620** tests. Same 6 folds + 2026-03..08 $100.
+- Bars: payoff ≥ 1.8, PF ≥ 1.5, Sharpe ≥ 1.2, DD ≤ 25%, AvgWin &gt; AvgLoss, min trades. High WR / low payoff rejected.
+- Book: `Results/R_BOOK.md`, ledger `Results/R_LEDGER.csv`.
+
+### Results
+- Discovery PASS: **18**. Official survivors: **0**.
+- EURUSD 0 / GBPUSD 4 disc / USDJPY 0 / GBPJPY 11 disc / XAUUSD 3 disc.
+- Closest 2017-18 then 2026: GBPJPY London ORB `r_orb2_sl1p0_rr3p0_ov_fixed` — disc E +0.39R, WR 35%, payoff 2.97; unseen 10 trades, E +0.60R, PF 2.0, Sharpe 1.42, $100->$105.96 — **failed min 15 unseen trades**.
+- Tiny-n 2026 prints (3–9 trades, WR 60–80%) are not an edge.
+
+### Why
+User required expectancy in R, SL/TP on every trade, payoff ≥ 1.8, not win-rate grinding.
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| 140 factory winners are ready to trade | They have no stop, payoff ~1. Invalid under this spec |
+| 5-trade 80% WR looks like +$8 | n is too small; discovery already failed |
+| Trail after 1R will lift payoff | Often turns into high WR / low payoff (invalid) |
+
+---
+
+## 2026-08-18 — 100,000 strategies x 5 pairs locked
+
+### What changed
+- Catalog locked at **100,000** named strategies (`ultra_grid` + prior families).
+- Ultra runner `scripts/run_ultra_factory.py` resumed from GBPJPY wave 774 after a mid-run stop.
+- Ledger append is now a true CSV append (no full rewrite of 160MB+ each chunk).
+- Books: `Results/RULE_SYSTEM_SUMMARY.md`, `Results/ALL_WINNERS.md`.
+
+### Results
+- **501,114** ledger rows. **100,000** unique ids. **500,022** unique pair x rule x hold tests.
+- **1,900** discovery PASS. **140** official survivors.
+- EURUSD 26 / GBPUSD **107** / USDJPY 3 / GBPJPY 4 / **XAUUSD 0**.
+- Best: GBPUSD `u_stoch21_30_70_h20` **$100 -> $106.51**, 97 trades / 20h / 5 of 6 months.
+- Next: GBPUSD `u_wr17_70_30_h20` $106.32, 98 trades, **6/6 months**.
+- Ultra leftover on GBPJPY/XAUUSD added almost no new ideas — GBPJPY gained two `u_*` clones of the existing RSI5 20h survivors. Gold still 0.
+- Resume wall time for leftover ~162k tests: **100 minutes**.
+
+### Why
+User asked to finish the 100k sweep and publish the full winner book plus the story from S-1 through this lock.
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| 140 survivors = 140 systems | Still one mean-reversion family (RSI / WillR / Stoch / z). `g_*` and `u_*` twins are the same trade |
+| Rewriting the whole ledger each chunk | Died mid-GBPJPY. Append-only lock is required at this size |
+| More hour/session RSI crosses will find gold | XAUUSD: 100,000 tests, 7 discovery PASS, **0** survivors at 2.5 pip |
+
+---
+
+## 2026-08-17 — Mass factory: 10,377 strategies x 5 pairs locked
+
+### What changed
+- Catalog **10,377** named strategies: SMC (FVG, OB, sweep, BOS, CHoCH, OTE, PD, killzones, Silver Bullet windows), Raja-Banks-style structure (CHoCH/sweep/OB in London/NY/SB), plus dense published grids (SMA/EMA/RSI/Stoch/Donchian/SuperTrend/etc.).
+- Multi-pair runner `scripts/run_mass_factory.py`. Ledger key is now `(wave, pair, rule_id, hold)`.
+- All 5 aligned pairs tested. Book: `Results/MASS_BOOK.md`.
+
+### Results
+- **52,744** locked rows. **87** official survivors.
+- EURUSD 14 / GBPUSD **66** / USDJPY 2 / GBPJPY 2 / **XAUUSD 0**.
+- Best: GBPUSD `g_rsi9_40_60_h16` **$100 -> $106.30**, 124 trades / 6 months.
+- SMC: 1 survivor (`smc_pd_24_any_h24` on GBPUSD, $105.39). Raja Banks encodings: **0**.
+- Most survivors are RSI/Williams neighbors, not 87 independent edges.
+
+### Why
+User asked for 10,000 strategies from online (incl. SMC, Raja Banks), all pairs, no stop.
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| 87 survivors = 87 systems | Almost all are the same oscillator with nearby periods |
+| SMC/Raja must work because YouTube | Mechanical FVG/OB/sweep/killzone failed except one PD on GBPUSD |
+| Gold will print if we just test more | XAUUSD: 0 survivors at these costs |
+
+---
+
+## 2026-08-17 — Module 1+2 / S-3 measured (handler helps only WillR 24h)
+
+### What changed
+`src/signals/s3.py` + `scripts/run_signal_s3.py` + `configs/signal_s3_eurusd_1h.yaml`.
+Sizes the 3 survivors with the locked 1h RV handler (fold-matched ckpts; unseen uses fold_5). Handler never sets side.
+
+### Unseen 6m from $100 (slots = non-overlap holds)
+
+| Rule | slots | trades | stood aside | raw $ | sized $ |
+|------|------:|-------:|------------:|------:|--------:|
+| rsi7 12h | 235 | 113 | 0 | 100.93 | 100.51 |
+| rsi9 12h | 235 | 95 | 0 | 100.14 | 99.99 |
+| willr 24h | 117 | 84 | 0 | 101.40 | **103.56** |
+
+Handler did **not** stand aside. It only scaled. Helped WillR; hurt both RSI rules. Best combo = WillR 24h × inverse-vol.
+
+### Why
+Next trading step after a survivor book. User asked to continue and to report trade counts.
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| Attach handler to every survivor | rsi7/rsi9 get worse. Only keep the combo that beats raw. |
+| 0 stand-aside looks like the handler is dead | Width never hit 1.5; it still changed size (WillR mean mult 1.16). |
+
+---
+
+## 2026-08-17 — Module 1 / public systems waves 8-12 locked
+
+### What changed
+Added documented retail/pro recipes (not invented here) and ran them on the same $100 / 6-month unseen gate:
+
+- Wave 8 `public`: Cowabunga, SuperTrend, Ichimoku, Turtle 20/55, ADX+DI, Stochastic, Williams %R, CCI, Keltner, Alligator, AO, Connors RSI2, MACD zero-cross, EMA 34/55 pullback, Heikin Ashi, Aroon
+- Wave 9 `session_sys`: Asian box / London breakout, daily pivots, round-number 00/50, 07:00 UTC 10/20-pip follow
+- Wave 10 `price_action`: engulfing, pin bar, inside-bar break, NR4/NR7
+- Wave 11 `combo`: Hull MA, TTM squeeze, Vortex, Camarilla, 200SMA+RSI, SuperTrend+RSI, MACDaddy, NY ORB
+- Wave 12: every prior discovery-PASS rescored at **24h** hold (pre-declared stretch)
+
+### Results
+- New unique tests: **+79** (catalog now **609** unique ids, 664 ledger rows)
+- New discovery PASS: Cowabunga, Stoch 14 30/70, WillR 14, London 10-pip — **all died on 2026-03..08**
+- New survivor: **`willr_14_70_30_h12` at 24h** — $100 -> **$101.40** (+1.40%), 4/6 months
+- Still **no** SuperTrend / Ichimoku / Turtle / Asian-box / Cowabunga survivor
+
+### Why
+User asked to keep building and to test strategies people actually publish.
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| Famous name = edge | Cowabunga passed 2017-18 and lost $1.78 on the last 6 months |
+| Williams %R is "new alpha" | Same mean-reversion family as the RSI survivors. Book is still not diversified |
+
+---
+
+## 2026-08-17 — Module 1 / Rule Factory waves 0-7 locked (500+ rules)
+
+### What changed
+1. Rule factory (`src/signals/catalog/`, `src/signals/factory.py`, `scripts/run_rule_wave.py`).
+2. Every rule scored on the same 6 discovery folds as S-1/S-2 **and** the last **6 calendar months** (2026-03..2026-08) from a **$100** opening balance.
+3. Append-only ledger: `Results/RULE_LEDGER.csv` (551 rows, 530 unique ids).
+4. Waves 0-7 run and locked. Scoreboard + book: `Results/RULE_SCOREBOARD.md`, `Results/SURVIVOR_BOOK.md`.
+
+### Protocol check (Wave 0)
+- `always_long_h1` discovery exp **−1.2377e-5** — matches S-1.
+- `tod_train_hours_h1` **−5.637e-6** — matches S-1.
+- `h12_k2_logistic_ohlc` discovery **+8.867e-5**, 5/6 — matches S-2.
+- Champion on unseen 6m: **$100 -> $97.48** (3/6 months green). **Not a survivor** on this window.
+
+### Wave results
+
+| Wave | Family | Rules | Disc PASS | Survivors |
+|------|--------|------:|----------:|----------:|
+| 0 | protocol | 8 | 1 | 0 |
+| 1 | time | 126 | 6 | 0 |
+| 2 | trend | 72 | 0 | 0 |
+| 3 | breakout | 54 | 0 | 0 |
+| 4 | mean-reversion | 75 | 4 | **2** |
+| 5 | momentum | 43 | 0 | 0 |
+| 6 | H=1 control | 10 | 0 | 0 |
+| 7 | vol-filter | 163 | 3 | 0 |
+
+### Survivors (only these may later transfer / meet S-3)
+- `rsi7_30_70_h12` — $100 -> **$100.93** (+0.93%), 4/6 months green, 5/6 discovery folds
+- `rsi9_30_70_h12` — $100 -> **$100.14** (+0.14%), 4/6 months green, 4/6 discovery folds
+
+Both beat the S-2 champion on the same $100 / 6-month window. Edge is small. Same family (RSI 30/70). Not a diversified book.
+
+### Why
+User asked for 500 rules, 6-month unseen, $100 account, lock every wave, no mid-run approvals.
+
+### Mistakes / pitfalls / lessons
+| Pitfall | Lesson |
+|---------|--------|
+| Best unseen $ P&L (SMA-fade / BB fade ~+$2.60) look like winners | They failed discovery. Do not promote. |
+| S-2 champion was green on 2017-18 | It lost on 2026-03..08. Confirmation is not optional. |
+| 530 tests will throw off some lucky discovery PASSes | 6-month + $100 + month-count killed all but 2. |
+
+---
+
 ## 2026-08-17 — Freeze: results logged through S-2; S-3 deferred
 
 ### What changed
